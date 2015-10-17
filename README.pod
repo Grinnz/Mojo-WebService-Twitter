@@ -57,9 +57,9 @@ be passed to the callback.
 =head2 ua_request_lenient
 
 Run a HTTP request via L</"ua_request">, but HTTP errors will not throw an
-exception or be returned in the callback. C<<$res->error>> can be used to check
-for HTTP errors manually, see L<Mojo::Message/"error">. Connection errors will
-still be reported normally.
+exception or be returned in the callback. C<< $res->error >> can be used to
+check for HTTP errors manually, see L<Mojo::Message/"error">. Connection errors
+will still be reported normally.
 
 =head1 BUGS
 
