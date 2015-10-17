@@ -1,51 +1,4 @@
-package Mojo::WebService;
-use Mojo::Base -base;
-
-use Carp 'croak';
-use Mojo::UserAgent;
-
-our $VERSION = '0.001';
-
-has 'ua' => sub { Mojo::UserAgent->new };
-
-my %methods = map { ($_ => 1) } qw(DELETE GET HEAD OPTIONS PATCH POST PUT);
-sub ua_request {
-	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
-	my ($self, $method, @args) = @_;
-	$method = uc $method;
-	croak "Unknown HTTP method $method" unless exists $methods{$method};
-	my $req_tx = $self->ua->build_tx($method => @args);
-	my $allow_http_errors = delete $self->{_allow_http_errors};
-	if ($cb) {
-		$self->ua->start($req_tx, sub {
-			my ($ua, $tx) = @_;
-			my $err;
-			$err = _ua_error($tx->error) if $tx->error
-				and !($allow_http_errors and $tx->error->{code});
-			$self->$cb($err, $tx->res);
-		});
-	} else {
-		my $tx = $self->ua->start($req_tx);
-		croak _ua_error($tx->error) if $tx->error
-			and !($allow_http_errors and $tx->error->{code});
-		return $tx->res;
-	}
-}
-
-sub ua_request_lenient {
-	my $self = shift;
-	local $self->{_allow_http_errors} = 1;
-	return $self->ua_request(@_);
-}
-
-sub _ua_error {
-	my $err = shift;
-	return $err->{code}
-		? "HTTP error $err->{code}: $err->{message}"
-		: "Connection error: $err->{message}";
-}
-
-1;
+=pod
 
 =head1 NAME
 
@@ -127,3 +80,5 @@ This is free software, licensed under:
 =head1 SEE ALSO
 
 L<Mojo::UserAgent>
+
+=cut
