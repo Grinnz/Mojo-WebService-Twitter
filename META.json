@@ -44,6 +44,11 @@
             "Scalar::Util" : "0",
             "perl" : "5.010001"
          }
+      },
+      "test" : {
+         "requires" : {
+            "Test::More" : "0.88"
+         }
       }
    },
    "provides" : {

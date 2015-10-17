@@ -87,11 +87,16 @@ EOW
         "Mojolicious" => "6.0",
         "Scalar::Util" => 0,
         "perl" => "5.010001"
+      },
+      "test_requires" => {
+        "Test::More" => "0.88"
       }
     );
 
 
-    my %fallback_build_requires = ();
+    my %fallback_build_requires = (
+      "Test::More" => "0.88"
+    );
 
 
     unless ( eval { Module::Build->VERSION(0.4004) } ) {
