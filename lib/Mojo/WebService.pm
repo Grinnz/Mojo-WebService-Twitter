@@ -105,7 +105,7 @@ be passed to the callback.
 
 Run a HTTP request via L</"request">, but HTTP errors will not throw an
 exception or be returned in the callback. C<< $res->error >> can be used to
-check for HTTP errors manually, see L<Mojo::Message/"error">. Connection errors
+check for specific HTTP errors, see L<Mojo::Message/"error">. Connection errors
 will still be reported normally.
 
 =head1 BUGS

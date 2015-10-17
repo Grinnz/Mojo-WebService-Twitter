@@ -84,6 +84,7 @@ EOW
       "requires" => {
         "Carp" => 0,
         "Date::Parse" => 0,
+        "IO::Socket::SSL" => "1.94",
         "Mojolicious" => "6.0",
         "Scalar::Util" => 0,
         "perl" => "5.010001"

@@ -62,26 +62,23 @@ sub get_user {
 sub _access_token {
 	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
 	my $self = shift;
+	if (exists $self->{_access_token}) {
+		return $cb ? $self->$cb(undef, $self->{_access_token}) : $self->{_access_token};
+	}
+	
+	my ($api_key, $api_secret) = ($self->api_key, $self->api_secret);
+	croak 'Twitter API key and secret are required'
+		unless defined $api_key and defined $api_secret;
+	my @token_request = _access_token_request($api_key, $api_secret);
+	
 	if ($cb) {
-		return $self->$cb(undef, $self->{_access_token}) if exists $self->{_access_token};
-		
-		my ($api_key, $api_secret) = ($self->api_key, $self->api_secret);
-		return $self->$cb('Twitter API key and secret are not set')
-			unless defined $api_key and defined $api_secret;
-		
-		$self->request(_access_token_request($api_key, $api_secret), sub {
+		$self->request(@token_request, sub {
 			my ($self, $err, $res) = @_;
 			return $self->$cb($err) if $err;
 			$self->$cb(undef, $self->{_access_token} = $res->json->{access_token});
 		});
 	} else {
-		return $self->{_access_token} if exists $self->{_access_token};
-		
-		my ($api_key, $api_secret) = ($self->api_key, $self->api_secret);
-		croak 'Twitter API key and secret are not set'
-			unless defined $api_key and defined $api_secret;
-		
-		my $res = $self->request(_access_token_request($api_key, $api_secret));
+		my $res = $self->request(@token_request);
 		return $self->{_access_token} = $res->json->{access_token};
 	}
 }
@@ -123,7 +120,65 @@ Mojo::WebService::Twitter - Simple Twitter API client
 
 =head1 SYNOPSIS
 
+ my $twitter = Mojo::WebService::Twitter->new(api_key => $api_key, api_secret => $api_secret);
+ 
+ # Blocking
+ my $user = $twitter->get_user(screen_name => $name);
+ 
+ # Non-blocking
+ $twitter->get_tweet($tweet_id, sub {
+   my ($twitter, $err, $tweet) = @_;
+ });
+
 =head1 DESCRIPTION
+
+L<Mojo::WebService::Twitter> is a L<Mojo::UserAgent> based
+L<Twitter|https://twitter.com> API client that can perform requests
+synchronously or asynchronously. An API key and secret for a
+L<Twitter Application|https://apps.twitter.com> are required.
+
+=head1 ATTRIBUTES
+
+L<Mojo::WebService::Twitter> inherits all attributes from L<Mojo::WebService>
+and implements the following new ones.
+
+=head2 api_key
+
+ my $api_key = $twitter->api_key;
+ $twitter    = $twitter->api_key($api_key);
+
+API key for your L<Twitter Application|https://apps.twitter.com>.
+
+=head2 api_secret
+
+ my $api_secret = $twitter->api_secret;
+ $twitter       = $twitter->api_secret($api_secret);
+
+API secret for your L<Twitter Application|https://apps.twitter.com>.
+
+=head1 METHODS
+
+L<Mojo::WebService::Twitter> inherits all methods from L<Mojo::WebService> and
+implements the following new ones.
+
+=head2 get_tweet
+
+ my $tweet = $twitter->get_tweet($tweet_id);
+ $twitter->get_tweet($tweet_id, sub {
+   my ($twitter, $err, $tweet) = @_;
+ });
+
+Retrieve a L<Mojo::WebService::Twitter::Tweet> by tweet ID.
+
+=head2 get_user
+
+ my $user = $twitter->get_user(user_id => $user_id);
+ my $user = $twitter->get_user(screen_name => $screen_name);
+ $twitter->get_user(screen_name => $screen_name, sub {
+   my ($twitter, $err, $user) = @_;
+ });
+
+Retrieve a L<Mojo::WebService::Twitter::User> by user ID or screen name.
 
 =head1 BUGS
 
@@ -143,3 +198,4 @@ This is free software, licensed under:
 
 =head1 SEE ALSO
 
+L<Mojo::WebService>
