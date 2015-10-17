@@ -9,7 +9,7 @@ our $VERSION = '0.001';
 has 'ua' => sub { Mojo::UserAgent->new };
 
 my %methods = map { ($_ => 1) } qw(DELETE GET HEAD OPTIONS PATCH POST PUT);
-sub ua_request {
+sub request {
 	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
 	my ($self, $method, @args) = @_;
 	$method = uc $method;
@@ -32,10 +32,10 @@ sub ua_request {
 	}
 }
 
-sub ua_request_lenient {
+sub request_lenient {
 	my $self = shift;
 	local $self->{_allow_http_errors} = 1;
-	return $self->ua_request(@_);
+	return $self->request(@_);
 }
 
 sub _ua_error {
@@ -61,13 +61,13 @@ Mojo::WebService - Simple API client base class
    my ($self, $stuff) = @_;
    my $url = Mojo::URL->new('http://example.com')->query(stuff => $stuff);
    if ($cb) {
-     $self->ua_request(get => $url, sub {
+     $self->request(get => $url, sub {
        my ($self, $err, $res) = @_;
        return $self->$cb($err) if $err;
        $self->$cb(undef, $res->json);
      });
    } else {
-     return $self->ua_request(get => $url)->json;
+     return $self->request(get => $url)->json;
    }
  }
 
@@ -87,10 +87,10 @@ defaults to a L<Mojo::UserAgent> object.
 
 =head1 METHODS
 
-=head2 ua_request
+=head2 request
 
- my $res     = $webservice->ua_request($method => @args);
- $webservice = $webservice->ua_request($method => @args, sub {
+ my $res     = $webservice->request($method => @args);
+ $webservice = $webservice->request($method => @args, sub {
    my ($webservice, $err, $res) = @_;
  });
 
@@ -101,9 +101,9 @@ on connection or HTTP error. If a callback is passed, the request will be
 performed non-blocking, and the connection or HTTP error (if any) will instead
 be passed to the callback.
 
-=head2 ua_request_lenient
+=head2 request_lenient
 
-Run a HTTP request via L</"ua_request">, but HTTP errors will not throw an
+Run a HTTP request via L</"request">, but HTTP errors will not throw an
 exception or be returned in the callback. C<< $res->error >> can be used to
 check for HTTP errors manually, see L<Mojo::Message/"error">. Connection errors
 will still be reported normally.

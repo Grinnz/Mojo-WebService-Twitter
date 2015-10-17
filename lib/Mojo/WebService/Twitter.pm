@@ -22,7 +22,7 @@ sub get_tweet {
 		$self->_access_token(sub {
 			my ($self, $err, $token) = @_;
 			return $self->$cb($err) if $err;
-			$self->ua_request(_api_request($token, 'statuses/show.json', id => $id), sub {
+			$self->request(_api_request($token, 'statuses/show.json', id => $id), sub {
 				my ($self, $err, $res) = @_;
 				return $self->$cb($err) if $err;
 				$self->$cb(undef, $self->_tweet_object($res->json));
@@ -30,7 +30,7 @@ sub get_tweet {
 		});
 	} else {
 		my $token = $self->_access_token;
-		my $res = $self->ua_request(_api_request($token, 'statuses/show.json', id => $id));
+		my $res = $self->request(_api_request($token, 'statuses/show.json', id => $id));
 		return $self->_tweet_object($res->json);
 	}
 }
@@ -46,7 +46,7 @@ sub get_user {
 		$self->_access_token(sub {
 			my ($self, $err, $token) = @_;
 			return $self->$cb($err) if $err;
-			$self->ua_request(_api_request($token, 'users/show.json', @query), sub {
+			$self->request(_api_request($token, 'users/show.json', @query), sub {
 				my ($self, $err, $res) = @_;
 				return $self->$cb($err) if $err;
 				$self->$cb(undef, $self->_user_object($res->json));
@@ -54,7 +54,7 @@ sub get_user {
 		});
 	} else {
 		my $token = $self->_access_token;
-		my $res = $self->ua_request(_api_request($token, 'users/show.json', @query));
+		my $res = $self->request(_api_request($token, 'users/show.json', @query));
 		return $self->_user_object($res->json);
 	}
 }
@@ -69,7 +69,7 @@ sub _access_token {
 		return $self->$cb('Twitter API key and secret are not set')
 			unless defined $api_key and defined $api_secret;
 		
-		$self->ua_request(_access_token_request($api_key, $api_secret), sub {
+		$self->request(_access_token_request($api_key, $api_secret), sub {
 			my ($self, $err, $res) = @_;
 			return $self->$cb($err) if $err;
 			$self->$cb(undef, $self->{_access_token} = $res->json->{access_token});
@@ -81,7 +81,7 @@ sub _access_token {
 		croak 'Twitter API key and secret are not set'
 			unless defined $api_key and defined $api_secret;
 		
-		my $res = $self->ua_request(_access_token_request($api_key, $api_secret));
+		my $res = $self->request(_access_token_request($api_key, $api_secret));
 		return $self->{_access_token} = $res->json->{access_token};
 	}
 }

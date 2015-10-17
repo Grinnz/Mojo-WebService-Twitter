@@ -19,19 +19,19 @@ my $w = Mojo::WebService->new;
 $w->ua->server->app->log->level('fatal');
 
 # Blocking
-is $w->ua_request($_ => '/')->json->[0], $_, 'right response' for @methods;
-ok defined($w->ua_request(head => '/')), 'no error';
+is $w->request($_ => '/')->json->[0], $_, 'right response' for @methods;
+ok defined($w->request(head => '/')), 'no error';
 
-ok !eval { $w->ua_request(get => '/die'); 1 }, 'threw HTTP error';
-ok !eval { $w->ua_request(get => '/foo'); 1 }, 'threw HTTP error';
+ok !eval { $w->request(get => '/die'); 1 }, 'threw HTTP error';
+ok !eval { $w->request(get => '/foo'); 1 }, 'threw HTTP error';
 
-is $w->ua_request_lenient(get => '/die')->error->{code}, '500', 'right HTTP error';
-is $w->ua_request_lenient(get => '/foo')->error->{code}, '404', 'right HTTP error';
+is $w->request_lenient(get => '/die')->error->{code}, '500', 'right HTTP error';
+is $w->request_lenient(get => '/foo')->error->{code}, '404', 'right HTTP error';
 
 # Non-blocking
 Mojo::IOLoop->delay(sub {
 	my $delay = shift;
-	$w->ua_request($_ => '/', $delay->begin) for @methods, 'head';
+	$w->request($_ => '/', $delay->begin) for @methods, 'head';
 }, sub {
 	my $delay = shift;
 	foreach my $method (@methods, 'head') {
@@ -45,8 +45,8 @@ Mojo::IOLoop->delay(sub {
 
 Mojo::IOLoop->delay(sub {
 	my $delay = shift;
-	$w->ua_request(get => '/die', $delay->begin);
-	$w->ua_request(get => '/foo', $delay->begin);
+	$w->request(get => '/die', $delay->begin);
+	$w->request(get => '/foo', $delay->begin);
 }, sub {
 	my ($delay, $err1, $res1, $err2, $res2) = @_;
 	like $err1, qr/500/, 'right HTTP error';
@@ -55,8 +55,8 @@ Mojo::IOLoop->delay(sub {
 
 Mojo::IOLoop->delay(sub {
 	my $delay = shift;
-	$w->ua_request_lenient(get => '/die', $delay->begin);
-	$w->ua_request_lenient(get => '/foo', $delay->begin);
+	$w->request_lenient(get => '/die', $delay->begin);
+	$w->request_lenient(get => '/foo', $delay->begin);
 }, sub {
 	my ($delay, $err1, $res1, $err2, $res2) = @_;
 	is $err1, undef, 'no connection error';
@@ -68,15 +68,15 @@ Mojo::IOLoop->delay(sub {
 # Transport errors
 $w->ua->on(start => sub { $_[1]->res->error({message => "Boom"}) });
 
-ok !eval { $w->ua_request(get => '/'); 1 }, 'threw connection error';
+ok !eval { $w->request(get => '/'); 1 }, 'threw connection error';
 like $@, qr/Boom/, 'right error';
-ok !eval { $w->ua_request_lenient(get => '/'); 1 }, 'threw connection error';
+ok !eval { $w->request_lenient(get => '/'); 1 }, 'threw connection error';
 like $@, qr/Boom/, 'right error';
 
 Mojo::IOLoop->delay(sub {
 	my $delay = shift;
-	$w->ua_request(get => '/', $delay->begin);
-	$w->ua_request_lenient(get => '/', $delay->begin);
+	$w->request(get => '/', $delay->begin);
+	$w->request_lenient(get => '/', $delay->begin);
 }, sub {
 	my ($delay, $err1, $res1, $err2, $res2) = @_;
 	like $err1, qr/Boom/, 'right error';
