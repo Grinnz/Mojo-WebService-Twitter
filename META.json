@@ -48,6 +48,7 @@
       },
       "test" : {
          "requires" : {
+            "List::Util" : "0",
             "Test::More" : "0.88"
          }
       }

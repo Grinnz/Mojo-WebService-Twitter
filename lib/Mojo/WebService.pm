@@ -6,6 +6,8 @@ use Mojo::UserAgent;
 
 our $VERSION = '0.001';
 
+use constant DEBUG => $ENV{MOJO_WEBSERVICE_DEBUG} || 0;
+
 has 'ua' => sub { Mojo::UserAgent->new };
 
 my %methods = map { ($_ => 1) } qw(DELETE GET HEAD OPTIONS PATCH POST PUT);
@@ -14,11 +16,14 @@ sub request {
 	my ($self, $method, @args) = @_;
 	$method = uc $method;
 	croak "Unknown HTTP method $method" unless exists $methods{$method};
+	croak "No target for HTTP $method request" unless @args;
 	my $req_tx = $self->ua->build_tx($method => @args);
 	my $allow_http_errors = delete $self->{_allow_http_errors};
+	warn "Sending request: $method $args[0]\n" if DEBUG;
 	if ($cb) {
 		$self->ua->start($req_tx, sub {
 			my ($ua, $tx) = @_;
+			warn "Webservice response:\n" . $tx->res->text . "\n" if DEBUG;
 			my $err;
 			$err = _ua_error($tx->error) if $tx->error
 				and !($allow_http_errors and $tx->error->{code});
@@ -26,6 +31,7 @@ sub request {
 		});
 	} else {
 		my $tx = $self->ua->start($req_tx);
+		warn "Webservice response:\n" . $tx->res->text . "\n" if DEBUG;
 		croak _ua_error($tx->error) if $tx->error
 			and !($allow_http_errors and $tx->error->{code});
 		return $tx->res;

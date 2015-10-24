@@ -3,6 +3,8 @@ use Mojo::Base -base;
 
 use Date::Parse;
 
+our $VERSION = '0.001';
+
 has [qw(source twitter)];
 has [qw(created_at favorites id retweets text user)];
 

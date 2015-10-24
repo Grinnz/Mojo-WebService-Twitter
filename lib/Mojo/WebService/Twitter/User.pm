@@ -4,6 +4,8 @@ use Mojo::Base -base;
 use Date::Parse;
 use Scalar::Util 'weaken';
 
+our $VERSION = '0.001';
+
 has [qw(source twitter)];
 has [qw(created_at description followers friends id last_tweet
 	name protected screen_name statuses url verified)];

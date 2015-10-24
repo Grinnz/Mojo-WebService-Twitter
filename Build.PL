@@ -90,12 +90,14 @@ EOW
         "perl" => "5.010001"
       },
       "test_requires" => {
+        "List::Util" => 0,
         "Test::More" => "0.88"
       }
     );
 
 
     my %fallback_build_requires = (
+      "List::Util" => 0,
       "Test::More" => "0.88"
     );
 

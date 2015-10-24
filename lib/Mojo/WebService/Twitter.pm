@@ -9,8 +9,8 @@ use Mojo::WebService::Twitter::User;
 
 our $VERSION = '0.001';
 
-use constant TWITTER_OAUTH_ENDPOINT => 'https://api.twitter.com/oauth2/token';
-use constant TWITTER_API_BASE => 'https://api.twitter.com/1.1/';
+our $OAUTH_ENDPOINT = 'https://api.twitter.com/oauth2/token';
+our $API_BASE_URL = 'https://api.twitter.com/1.1/';
 
 has ['api_key','api_secret'];
 
@@ -86,7 +86,7 @@ sub _access_token {
 sub _access_token_request {
 	my ($api_key, $api_secret) = @_;
 	my $bearer_token = b64_encode(url_escape($api_key) . ':' . url_escape($api_secret), '');
-	my $url = Mojo::URL->new(TWITTER_OAUTH_ENDPOINT);
+	my $url = Mojo::URL->new($OAUTH_ENDPOINT);
 	my %headers = (Authorization => "Basic $bearer_token",
 		'Content-Type' => 'application/x-www-form-urlencoded;charset=UTF-8');
 	my %form = (grant_type => 'client_credentials');
@@ -95,7 +95,7 @@ sub _access_token_request {
 
 sub _api_request {
 	my ($token, $endpoint, @query) = @_;
-	my $url = Mojo::URL->new(TWITTER_API_BASE)->path($endpoint)->query(@query);
+	my $url = Mojo::URL->new($API_BASE_URL)->path($endpoint)->query(@query);
 	my %headers = (Authorization => "Bearer $token");
 	return (get => $url, \%headers);
 }
