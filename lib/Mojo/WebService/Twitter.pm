@@ -2,6 +2,7 @@ package Mojo::WebService::Twitter;
 use Mojo::Base 'Mojo::WebService';
 
 use Carp 'croak';
+use Mojo::Collection;
 use Mojo::URL;
 use Mojo::Util qw(b64_encode url_escape);
 use Mojo::WebService::Twitter::Tweet;
@@ -38,15 +39,15 @@ sub get_tweet {
 sub get_user {
 	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
 	my ($self, %params) = @_;
-	my @query;
-	push @query, user_id => $params{user_id} if defined $params{user_id};
-	push @query, screen_name => $params{screen_name} if defined $params{screen_name};
-	croak 'user_id or screen_name is required for get_user' unless @query;
+	my %query;
+	$query{user_id} = $params{user_id} if defined $params{user_id};
+	$query{screen_name} = $params{screen_name} if defined $params{screen_name};
+	croak 'user_id or screen_name is required for get_user' unless %query;
 	if ($cb) {
 		$self->_access_token(sub {
 			my ($self, $err, $token) = @_;
 			return $self->$cb($err) if $err;
-			$self->request(_api_request($token, 'users/show.json', @query), sub {
+			$self->request(_api_request($token, 'users/show.json', %query), sub {
 				my ($self, $err, $res) = @_;
 				return $self->$cb($err) if $err;
 				$self->$cb(undef, $self->_user_object($res->json));
@@ -54,8 +55,40 @@ sub get_user {
 		});
 	} else {
 		my $token = $self->_access_token;
-		my $res = $self->request(_api_request($token, 'users/show.json', @query));
+		my $res = $self->request(_api_request($token, 'users/show.json', %query));
 		return $self->_user_object($res->json);
+	}
+}
+
+sub search_tweets {
+	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
+	my ($self, $q, %params) = @_;
+	croak 'Search query is required for search_tweets' unless defined $q;
+	my %query;
+	$query{q} = $q;
+	my $geocode = $params{geocode};
+	if (ref $geocode) {
+		my ($lat, $long, $rad);
+		($lat, $long, $rad) = @$geocode if ref $geocode eq 'ARRAY';
+		($lat, $long, $rad) = @{$geocode}{'latitude','longitude','radius'} if ref $geocode eq 'HASH';
+		$geocode = "$lat,$long,$rad" if defined $lat and defined $long and defined $rad;
+	}
+	$query{geocode} = $geocode if defined $geocode;
+	$query{$_} = $params{$_} for grep { defined $params{$_} } qw(lang result_type count until since_id max_id);
+	if ($cb) {
+		$self->_access_token(sub {
+			my ($self, $err, $token) = @_;
+			return $self->$cb($err) if $err;
+			$self->request(_api_request($token, 'search/tweets.json', %query), sub {
+				my ($self, $err, $res) = @_;
+				return $self->$cb($err) if $err;
+				$self->$cb(undef, Mojo::Collection->new(@{$res->json->{statuses} // []}));
+			});
+		});
+	} else {
+		my $token = $self->_access_token;
+		my $res = $self->request(_api_request($token, 'search/tweets.json', %query));
+		return Mojo::Collection->new(@{$res->json->{statuses} // []});
 	}
 }
 
@@ -179,6 +212,75 @@ Retrieve a L<Mojo::WebService::Twitter::Tweet> by tweet ID.
  });
 
 Retrieve a L<Mojo::WebService::Twitter::User> by user ID or screen name.
+
+=head2 search_tweets
+
+ my $tweets = $twitter->search_tweets($query);
+ my $tweets = $twitter->search_tweets($query, %options);
+ $twitter->search_tweets($query, %options, sub {
+   my ($twitter, $err, $tweets) = @_;
+ });
+
+Search Twitter and return a L<Mojo::Collection> of L<Mojo::WebService::Twitter::Tweet>
+objects. Accepts the following options:
+
+=over
+
+=item geocode
+
+ geocode => '37.781157,-122.398720,1mi'
+ geocode => ['37.781157','-122.398720','1mi']
+ geocode => {latitude => '37.781157', longitude => '-122.398720', radius => '1mi'}
+
+Restricts tweets to the given radius of the given latitude/longitude. Radius
+must be specified as C<mi> (miles) or C<km> (kilometers).
+
+=item lang
+
+ lang => 'eu'
+
+Restricts tweets to the given L<ISO 639-1|http://en.wikipedia.org/wiki/List_of_ISO_639-1_codes>
+language code.
+
+=item result_type
+
+ result_type => 'recent'
+
+Specifies what type of search results to receive. Valid values are C<recent>,
+C<popular>, and C<mixed> (default).
+
+=item count
+
+ count => 5
+
+Limits the search results per page. Maximum C<100>, default C<15>.
+
+=item until
+
+ until => '2015-07-19'
+
+Restricts tweets to those created before the given date, in the format
+C<YYYY-MM-DD>.
+
+=item since_id
+
+ since_id => '12345'
+
+Restricts results to those more recent than the given tweet ID. IDs should be
+specified as a string to avoid issues with large integers. See
+L<here|https://dev.twitter.com/rest/public/timelines> for more information on
+filtering results with C<since_id> and C<max_id>.
+
+=item max_id
+
+ max_id => '54321'
+
+Restricts results to those older than (or equal to) the given tweet ID. IDs
+should be specified as a string to avoid issues with large integers. See
+L<here|https://dev.twitter.com/rest/public/timelines> for more information on
+filtering results with C<since_id> and C<max_id>.
+
+=back
 
 =head1 BUGS
 
