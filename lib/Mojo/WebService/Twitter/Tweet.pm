@@ -5,14 +5,7 @@ use Mojo::WebService::Twitter::Util 'parse_twitter_timestamp';
 
 our $VERSION = '0.001';
 
-has [qw(source twitter)];
-has [qw(created_at favorites id retweets text user)];
-
-sub new {
-	my $self = shift->SUPER::new(@_);
-	$self->_populate if defined $self->source;
-	return $self;
-}
+has [qw(twitter created_at favorites id retweets text user)];
 
 sub fetch {
 	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
@@ -28,9 +21,8 @@ sub fetch {
 	}
 }
 
-sub _populate {
-	my $self = shift;
-	my $source = $self->source;
+sub from_source {
+	my ($self, $source) = @_;
 	$self->created_at(parse_twitter_timestamp($source->{created_at}));
 	$self->favorites($source->{favorite_count});
 	$self->id($source->{id_str});
@@ -39,6 +31,7 @@ sub _populate {
 	if (defined $source->{user}) {
 		$self->user($self->twitter->_user_object($source->{user}));
 	}
+	return $self;
 }
 
 1;
@@ -64,12 +57,6 @@ L<Twitter|https://twitter.com> tweet. See L<https://dev.twitter.com/overview/api
 for more information.
 
 =head1 ATTRIBUTES
-
-=head2 source
-
- my $source = $tweet->source;
-
-Source data from Twitter API, used to construct the tweet's attributes.
 
 =head2 twitter
 
@@ -117,13 +104,8 @@ User who sent the tweet, as a L<Mojo::WebService::Twitter::User> object.
 
 =head1 METHODS
 
-=head2 new
-
- my $tweet = Mojo::WebService::Twitter::Tweet->new(source => $source, twitter => $twitter);
- my $tweet = Mojo::WebService::Twitter::Tweet->new(id => $tweet_id, twitter => $twitter)->fetch;
-
-Create a new L<Mojo::WebService::Twitter::Tweet> object and populate attributes
-from L</"source"> if available.
+L<Mojo::WebService::Twitter::Tweet> inherits all methods from L<Mojo::Base>,
+and implements the following new ones.
 
 =head2 fetch
 
@@ -131,6 +113,12 @@ from L</"source"> if available.
 
 Fetch tweet from L</"twitter"> based on L</"id"> and return a new
 L<Mojo::WebService::Twitter::Tweet> object.
+
+=head2 from_source
+
+ $tweet = $tweet->from_source($hr);
+
+Populate attributes from hashref of Twitter API source data.
 
 =head1 BUGS
 

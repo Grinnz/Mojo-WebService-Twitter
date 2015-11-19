@@ -6,6 +6,7 @@ use Mojo::Collection;
 use Mojo::URL;
 use Mojo::UserAgent;
 use Mojo::Util qw(b64_encode url_escape);
+use Mojo::WebService::Twitter::Error;
 use Mojo::WebService::Twitter::Tweet;
 use Mojo::WebService::Twitter::User;
 
@@ -27,14 +28,14 @@ sub get_tweet {
 			return $self->$cb($err) if $err;
 			$self->ua->get(_api_request($token, 'statuses/show.json', id => $id), sub {
 				my ($ua, $tx) = @_;
-				return $self->$cb(_ua_error($tx->error)) if $tx->error;
+				return $self->$cb(_api_error($tx)) if $tx->error;
 				$self->$cb(undef, $self->_tweet_object($tx->res->json));
 			});
 		});
 	} else {
 		my $token = $self->_access_token;
 		my $tx = $self->ua->get(_api_request($token, 'statuses/show.json', id => $id));
-		die _ua_error($tx->error) if $tx->error;
+		die _api_error($tx) if $tx->error;
 		return $self->_tweet_object($tx->res->json);
 	}
 }
@@ -52,14 +53,14 @@ sub get_user {
 			return $self->$cb($err) if $err;
 			$self->ua->get(_api_request($token, 'users/show.json', %query), sub {
 				my ($ua, $tx) = @_;
-				return $self->$cb(_ua_error($tx->error)) if $tx->error;
+				return $self->$cb(_api_error($tx)) if $tx->error;
 				$self->$cb(undef, $self->_user_object($tx->res->json));
 			});
 		});
 	} else {
 		my $token = $self->_access_token;
 		my $tx = $self->ua->get(_api_request($token, 'users/show.json', %query));
-		die _ua_error($tx->error) if $tx->error;
+		die _api_error($tx) if $tx->error;
 		return $self->_user_object($tx->res->json);
 	}
 }
@@ -85,14 +86,14 @@ sub search_tweets {
 			return $self->$cb($err) if $err;
 			$self->ua->get(_api_request($token, 'search/tweets.json', %query), sub {
 				my ($ua, $tx) = @_;
-				return $self->$cb(_ua_error($tx->error)) if $tx->error;
+				return $self->$cb(_api_error($tx)) if $tx->error;
 				$self->$cb(undef, Mojo::Collection->new(@{$tx->res->json->{statuses} // []}));
 			});
 		});
 	} else {
 		my $token = $self->_access_token;
 		my $tx = $self->ua->get(_api_request($token, 'search/tweets.json', %query));
-		die _ua_error($tx->error) if $tx->error;
+		die _api_error($tx) if $tx->error;
 		return Mojo::Collection->new(@{$tx->res->json->{statuses} // []});
 	}
 }
@@ -112,11 +113,12 @@ sub _access_token {
 	if ($cb) {
 		$self->ua->post(@token_request, sub {
 			my ($ua, $tx) = @_;
-			return $self->$cb(_ua_error($tx->error)) if $tx->error;
+			return $self->$cb(_api_error($tx)) if $tx->error;
 			$self->$cb(undef, $self->{_access_token} = $tx->res->json->{access_token});
 		});
 	} else {
 		my $tx = $self->ua->post(@token_request);
+		die _api_error($tx) if $tx->error;
 		return $self->{_access_token} = $tx->res->json->{access_token};
 	}
 }
@@ -140,22 +142,15 @@ sub _api_request {
 
 sub _tweet_object {
 	my ($self, $source) = @_;
-	my $tweet = Mojo::WebService::Twitter::Tweet->new(twitter => $self, source => $source);
-	return $tweet;
+	return Mojo::WebService::Twitter::Tweet->new(twitter => $self)->from_source($source);
 }
 
 sub _user_object {
 	my ($self, $source) = @_;
-	my $user = Mojo::WebService::Twitter::User->new(twitter => $self, source => $source);
-	return $user;
+	return Mojo::WebService::Twitter::User->new(twitter => $self)->from_source($source);
 }
 
-sub _ua_error {
-	my $err = shift;
-	return $err->{code}
-		? "HTTP error $err->{code}: $err->{message}"
-		: "Connection error: $err->{message}";
-}
+sub _api_error { Mojo::WebService::Twitter::Error->new->from_tx(shift) }
 
 1;
 
@@ -210,7 +205,8 @@ defaults to a L<Mojo::UserAgent> object.
 
 =head1 METHODS
 
-L<Mojo::WebService::Twitter> implements the following methods.
+L<Mojo::WebService::Twitter> inherits all methods from L<Mojo::Base>, and
+implements the following new ones.
 
 =head2 get_tweet
 

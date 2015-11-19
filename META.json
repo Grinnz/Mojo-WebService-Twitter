@@ -59,6 +59,10 @@
          "file" : "lib/Mojo/WebService/Twitter.pm",
          "version" : "0.001"
       },
+      "Mojo::WebService::Twitter::Error" : {
+         "file" : "lib/Mojo/WebService/Twitter/Error.pm",
+         "version" : "0.001"
+      },
       "Mojo::WebService::Twitter::Tweet" : {
          "file" : "lib/Mojo/WebService/Twitter/Tweet.pm",
          "version" : "0.001"

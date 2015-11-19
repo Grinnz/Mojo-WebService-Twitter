@@ -6,15 +6,8 @@ use Scalar::Util 'weaken';
 
 our $VERSION = '0.001';
 
-has [qw(source twitter)];
-has [qw(created_at description followers friends id last_tweet
+has [qw(twitter created_at description followers friends id last_tweet
 	name protected screen_name statuses url verified)];
-
-sub new {
-	my $self = shift->SUPER::new(@_);
-	$self->_populate if defined $self->source;
-	return $self;
-}
 
 sub fetch {
 	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
@@ -31,9 +24,8 @@ sub fetch {
 	}
 }
 
-sub _populate {
-	my $self = shift;
-	my $source = $self->source;
+sub from_source {
+	my ($self, $source) = @_;
 	$self->created_at(parse_twitter_timestamp($source->{created_at}));
 	$self->description($source->{description});
 	$self->followers($source->{followers_count});
@@ -49,6 +41,7 @@ sub _populate {
 		$self->last_tweet(my $tweet = $self->twitter->_tweet_object($source->{status}));
 		weaken($tweet->{user} = $self);
 	}
+	return $self;
 }
 
 1;
@@ -75,12 +68,6 @@ L<Twitter|https://twitter.com> user. See L<https://dev.twitter.com/overview/api/
 for more information.
 
 =head1 ATTRIBUTES
-
-=head2 source
-
- my $source = $user->source;
-
-Source data from Twitter API, used to construct the user's attributes.
 
 =head2 twitter
 
@@ -164,14 +151,8 @@ Whether the user is a L<Verified Account|https://twitter.com/help/verified>.
 
 =head1 METHODS
 
-=head2 new
-
- my $user = Mojo::WebService::Twitter::User->new(source => $source, twitter => $twitter);
- my $user = Mojo::WebService::Twitter::User->new(id => $user_id, twitter => $twitter)->fetch;
- my $user = Mojo::WebService::Twitter::User->new(screen_name => $screen_name, twitter => $twitter)->fetch;
-
-Create a new L<Mojo::WebService::Twitter::User> object and populate attributes
-from L</"source"> if available.
+L<Mojo::WebService::Twitter::User> inherits all methods from L<Mojo::Base>, and
+implements the following new ones.
 
 =head2 fetch
 
@@ -179,6 +160,12 @@ from L</"source"> if available.
 
 Fetch user from L</"twitter"> based on L</"id"> or L</"screen_name"> and return
 a new L<Mojo::WebService::Twitter::User> object.
+
+=head2 from_source
+
+ $user = $user->from_source($hr);
+
+Populate attributes from hashref of Twitter API source data.
 
 =head1 BUGS
 
