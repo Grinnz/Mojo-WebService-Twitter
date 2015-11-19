@@ -36,7 +36,7 @@ API. All functions are exportable on demand.
  my $time = parse_twitter_timestamp($ts);
 
 Takes a timestamp string in the format returned by Twitter and returns a
-corresponding L<Time::Piece> object.
+corresponding L<Time::Piece> object in UTC.
 
 =head1 BUGS
 

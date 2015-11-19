@@ -69,7 +69,7 @@ L<Mojo::WebService::Twitter> object used to make API requests.
 
  my $ts = $tweet->created_at;
 
-Unix epoch timestamp representing the creation time of the tweet.
+<Time::Piece> object representing the creation time of the tweet in UTC.
 
 =head2 favorites
 
