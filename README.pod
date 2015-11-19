@@ -25,8 +25,7 @@ L<Twitter Application|https://apps.twitter.com> are required.
 
 =head1 ATTRIBUTES
 
-L<Mojo::WebService::Twitter> inherits all attributes from L<Mojo::WebService>
-and implements the following new ones.
+L<Mojo::WebService::Twitter> implements the following attributes.
 
 =head2 api_key
 
@@ -52,8 +51,7 @@ defaults to a L<Mojo::UserAgent> object.
 
 =head1 METHODS
 
-L<Mojo::WebService::Twitter> inherits all methods from L<Mojo::WebService> and
-implements the following new ones.
+L<Mojo::WebService::Twitter> implements the following methods.
 
 =head2 get_tweet
 
