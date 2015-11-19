@@ -22,7 +22,7 @@ sub from_tx {
 
 sub to_string {
 	my $self = shift;
-	if (my $err = $self->connection_error) {
+	if (defined(my $err = $self->connection_error)) {
 		return "Connection error: $err\n";
 	} elsif (my @errs = @{$self->api_errors}) {
 		return "API error $errs[0]{code}: $errs[0]{message}\n";
@@ -40,7 +40,7 @@ Mojo::WebService::Twitter::Error - Container for API errors
 =head1 SYNOPSIS
 
  my $error = Mojo::WebService::Twitter::Error->new->from_tx($tx);
- warn for @{$error->api_errors};
+ warn "$_->{code}: $_->{message}\n" for @{$error->api_errors};
  die $error->to_string;
 
 =head1 DESCRIPTION
