@@ -35,7 +35,7 @@ sub get_tweet {
 	} else {
 		my $token = $self->_access_token;
 		my $tx = $self->ua->get(_api_request($token, 'statuses/show.json', id => $id));
-		die _api_error($tx) if $tx->error;
+		die _api_error($tx) . "\n" if $tx->error;
 		return $self->_tweet_object($tx->res->json);
 	}
 }
@@ -60,7 +60,7 @@ sub get_user {
 	} else {
 		my $token = $self->_access_token;
 		my $tx = $self->ua->get(_api_request($token, 'users/show.json', %query));
-		die _api_error($tx) if $tx->error;
+		die _api_error($tx) . "\n" if $tx->error;
 		return $self->_user_object($tx->res->json);
 	}
 }
@@ -93,7 +93,7 @@ sub search_tweets {
 	} else {
 		my $token = $self->_access_token;
 		my $tx = $self->ua->get(_api_request($token, 'search/tweets.json', %query));
-		die _api_error($tx) if $tx->error;
+		die _api_error($tx) . "\n" if $tx->error;
 		return Mojo::Collection->new(@{$tx->res->json->{statuses} // []});
 	}
 }
@@ -118,7 +118,7 @@ sub _access_token {
 		});
 	} else {
 		my $tx = $self->ua->post(@token_request);
-		die _api_error($tx) if $tx->error;
+		die _api_error($tx) . "\n" if $tx->error;
 		return $self->{_access_token} = $tx->res->json->{access_token};
 	}
 }
@@ -164,11 +164,14 @@ Mojo::WebService::Twitter - Simple Twitter API client
  
  # Blocking
  my $user = $twitter->get_user(screen_name => $name);
+ say $user->screen_name . ' was created on ' . $user->created_at->ymd;
  
  # Non-blocking
  $twitter->get_tweet($tweet_id, sub {
    my ($twitter, $err, $tweet) = @_;
+   say $err ? "Error: $err" : 'Tweet: ' . $tweet->text;
  });
+ Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
 
 =head1 DESCRIPTION
 

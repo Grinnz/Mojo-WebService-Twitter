@@ -10,11 +10,14 @@ Mojo::WebService::Twitter - Simple Twitter API client
  
  # Blocking
  my $user = $twitter->get_user(screen_name => $name);
+ say $user->screen_name . ' was created on ' . $user->created_at->ymd;
  
  # Non-blocking
  $twitter->get_tweet($tweet_id, sub {
    my ($twitter, $err, $tweet) = @_;
+   say $err ? "Error: $err" : 'Tweet: ' . $tweet->text;
  });
+ Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
 
 =head1 DESCRIPTION
 

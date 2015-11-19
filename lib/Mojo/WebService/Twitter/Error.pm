@@ -23,11 +23,11 @@ sub from_tx {
 sub to_string {
 	my $self = shift;
 	if (defined(my $err = $self->connection_error)) {
-		return "Connection error: $err\n";
+		return "Connection error: $err";
 	} elsif (my @errs = @{$self->api_errors}) {
-		return "API error $errs[0]{code}: $errs[0]{message}\n";
+		return "API error $errs[0]{code}: $errs[0]{message}";
 	} else {
-		return 'HTTP status ' . $self->http_status . ': ' . $self->http_message . "\n";
+		return 'HTTP status ' . $self->http_status . ': ' . $self->http_message;
 	}
 }
 
