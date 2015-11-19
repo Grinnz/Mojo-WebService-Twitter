@@ -5,6 +5,7 @@ use Carp 'croak';
 use Digest::SHA 'hmac_sha1';
 use List::Util 'pairs';
 use Mojo::Collection;
+use Mojo::Parameters;
 use Mojo::URL;
 use Mojo::UserAgent;
 use Mojo::Util qw(b64_encode encode url_escape);
@@ -101,6 +102,70 @@ sub search_tweets {
 	}
 }
 
+sub oauth_authorize_url {
+	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
+	my $self = shift;
+	
+	if ($cb) {
+		$self->_request_token(sub {
+			my ($self, $err, $token) = @_;
+			return $self->$cb($err) if $err;
+			$self->cb(_oauth_url('authorize', oauth_token => $token));
+		});
+	} else {
+		my $token = $self->_request_token;
+		return _oauth_url('authorize', oauth_token => $token);
+	}
+}
+
+sub oauth_verify_authorization {
+	my $cb = ref $-[-1] eq 'CODE' ? pop : undef;
+	my ($self, $token, $pin) = @_;
+	
+	my $request_secret = $self->_get_request_secret($token) // croak "Unknown request token $token";
+	
+	my ($api_key, $api_secret) = ($self->api_key, $self->api_secret);
+	croak 'Twitter API key and secret are required'
+		unless defined $api_key and defined $api_secret;
+	my @verify_request = _oauth_request(
+		api_key => $api_key,
+		api_secret => $api_secret,
+		oauth_token => $token,
+		oauth_secret => $request_secret,
+		method => 'POST',
+		url => _oauth_url('access_token'),
+		form => {oauth_verifier => $pin},
+	);
+	
+	if ($cb) {
+		$self->ua->post(@verify_request, sub {
+			my ($ua, $tx) = @_;
+			return $self->$cb(_api_error($tx)) if $tx->error;
+			my $params = Mojo::Parameters->new($tx->res->text)->to_hash;
+			my ($user_id, $token, $secret) = @{$params}{'user_id','oauth_token','oauth_token_secret'};
+			$self->oauth_credentials($user_id, $token, $secret);
+			$self->$cb(undef, $user_id);
+		});
+	} else {
+		my $tx = $self->ua->post(@verify_request);
+		my $params = Mojo::Parameters->new($tx->res->text)->to_hash;
+		my ($user_id, $token, $secret) = @{$params}{'user_id','oauth_token','oauth_token_secret'};
+		$self->oauth_credentials($user_id, $token, $secret);
+		return $user_id;
+	}
+}
+
+sub oauth_credentials {
+	my $self = shift;
+	my $user_id = shift;
+	if (@_) {
+		my ($token, $secret) = @_;
+		$self->{_oauth_credentials}{$user_id} = { token => $token, secret => $secret };
+		return $self;
+	}
+	return @{$self->{_oauth_credentials}{$user_id} // {}}{'token','secret'};
+}
+
 sub _access_token {
 	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
 	my $self = shift;
@@ -138,7 +203,9 @@ sub _access_token_request {
 
 sub _api_url {
 	my ($endpoint, @query) = @_;
-	return Mojo::URL->new($API_BASE_URL)->path($endpoint)->query(@query);
+	my $url = Mojo::URL->new($API_BASE_URL)->path($endpoint);
+	$url->query(@query) if @query;
+	return $url;
 }
 
 sub _api_headers {
@@ -159,7 +226,7 @@ sub _request_token {
 		$self->ua->post(@token_request, sub {
 			my ($ua, $tx) = @_;
 			return $self->$cb(_api_error($tx)) if $tx->error;
-			my $params = $tx->res->body_params->to_hash;
+			my $params = Mojo::Parameters->new($tx->res->text)->to_hash;
 			return $self->$cb("OAuth callback was not confirmed")
 				unless $params->{oauth_callback_confirmed} eq 'true';
 			$self->$cb(undef, $self->_store_request_token($params));
@@ -167,7 +234,7 @@ sub _request_token {
 	} else {
 		my $tx = $self->ua->post(@token_request);
 		die _api_error($tx) . "\n" if $tx->error;
-		my $params = $tx->res->body_params->to_hash;
+		my $params = Mojo::Parameters->new($tx->res->text)->to_hash;
 		die "OAuth callback was not confirmed\n"
 			unless $params->{oauth_callback_confirmed} eq 'true';
 		return $self->_store_request_token($params);
@@ -179,6 +246,16 @@ sub _store_request_token {
 	my $token = $params->{oauth_token};
 	$self->{_request_token_secrets}{$token} = $params->{oauth_token_secret};
 	return $token;
+}
+
+sub _get_request_secret {
+	my ($self, $token) = @_;
+	return $self->{_request_token_secrets}{$token};
+}
+
+sub _get_oauth_token {
+	my ($self, $user_id) = @_;
+	return $self->oauth_tokens->{$user_id};
 }
 
 sub _request_token_request {
@@ -194,7 +271,9 @@ sub _request_token_request {
 
 sub _oauth_url {
 	my ($endpoint, @query) = @_;
-	return Mojo::URL->new($OAUTH_BASE_URL)->path($endpoint)->query(@query);
+	my $url = Mojo::URL->new($OAUTH_BASE_URL)->path($endpoint);
+	$url->query(@query) if @query;
+	return $url;
 }
 
 sub _oauth_request {
@@ -216,15 +295,15 @@ sub _oauth_request {
 	$oauth_params{$_} = delete $form->{$_} for grep { m/^oauth_/ } keys %$form;
 	
 	$oauth_params{oauth_signature} = _oauth_signature($method, $url->clone->fragment('')->query('')->to_string,
-		[@{$url->params->pairs}, %{$form // {}}, %oauth_params], $api_secret, $oauth_secret);
-	my $auth_str = join ', ', map { $_ . '="' . url_escape($oauth_params{$_}) . '"' } keys %oauth_params;
+		[@{$url->query->pairs}, %{$form // {}}, %oauth_params], $api_secret, $oauth_secret);
+	my $auth_str = join ', ', map { $_ . '="' . url_escape($oauth_params{$_}) . '"' } sort keys %oauth_params;
 	
-	my %headers = (Authorization => "OAuth $auth_str");
+	my %headers = (Authorization => "OAuth $auth_str", Accept => '*/*');
 	return %$form ? ($url, \%headers, form => $form) : ($url, \%headers);
 }
 
 sub _oauth_nonce {
-	my $str = b64_encode join('', map { chr int rand 256 } 1..32), '';
+	my $str = b64_encode join('', map { chr int rand 256 } 1..24), '';
 	$str =~ s/[^a-zA-Z0-9]//g;
 	return $str;
 }
@@ -235,7 +314,7 @@ sub _oauth_signature {
 	my $params_str = join '&', map { $_->[0] . '=' . $_->[1] } @sorted_pairs;
 	my $signature_str = uc($method) . '&' . url_escape($url) . '&' . url_escape($params_str);
 	my $signing_key = url_escape($api_secret) . '&' . url_escape($oauth_secret // '');
-	return b64_encode hmac_sha1($signature_str, $signing_key), '';
+	return b64_encode(hmac_sha1($signature_str, $signing_key), '');
 }
 
 sub _tweet_object {
@@ -396,6 +475,31 @@ L<here|https://dev.twitter.com/rest/public/timelines> for more information on
 filtering results with C<since_id> and C<max_id>.
 
 =back
+
+=head2 oauth_credentials
+
+ my ($token, $secret) = $twitter->oauth_credentials($user_id);
+ $twitter             = $twitter->oauth_credentials($user_id, $token, $secret);
+
+Get or set the OAuth token and secret to use for requests on behalf of a
+particular user ID.
+
+=head2 oauth_authorize_url
+
+ my ($url, $request_token) = $twitter->oauth_authorize_url;
+
+Retrieve a OAuth authorization URL to present to the user. After authorization,
+the user will receive a PIN which can be passed to L</"oauth_verify_authorization">
+along with the returned request token to retrieve an access token and secret.
+
+=head2 oauth_verify_authorization
+
+ my $user_id = $twitter->oauth_verify_authorization($request_token, $pin);
+
+Verify an authorization with a previously returned request token and the PIN
+from the authorizing user. If successful, the OAuth token and secret can be
+retrieved from L</"oauth_credentials"> and will be used for requests on behalf
+of the authorizing user.
 
 =head1 BUGS
 

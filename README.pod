@@ -145,6 +145,31 @@ filtering results with C<since_id> and C<max_id>.
 
 =back
 
+=head2 oauth_credentials
+
+ my ($token, $secret) = $twitter->oauth_credentials($user_id);
+ $twitter             = $twitter->oauth_credentials($user_id, $token, $secret);
+
+Get or set the OAuth token and secret to use for requests on behalf of a
+particular user ID.
+
+=head2 oauth_authorize_url
+
+ my ($url, $request_token) = $twitter->oauth_authorize_url;
+
+Retrieve a OAuth authorization URL to present to the user. After authorization,
+the user will receive a PIN which can be passed to L</"oauth_verify_authorization">
+along with the returned request token to retrieve an access token and secret.
+
+=head2 oauth_verify_authorization
+
+ my $user_id = $twitter->oauth_verify_authorization($request_token, $pin);
+
+Verify an authorization with a previously returned request token and the PIN
+from the authorizing user. If successful, the OAuth token and secret can be
+retrieved from L</"oauth_credentials"> and will be used for requests on behalf
+of the authorizing user.
+
 =head1 BUGS
 
 Report any issues on the public bugtracker.
