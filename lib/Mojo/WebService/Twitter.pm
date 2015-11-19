@@ -162,7 +162,7 @@ sub _request_token {
 			my $params = $tx->res->body_params->to_hash;
 			return $self->$cb("OAuth callback was not confirmed")
 				unless $params->{oauth_callback_confirmed} eq 'true';
-			$self->$cb(undef, $params);
+			$self->$cb(undef, $self->_store_request_token($params));
 		});
 	} else {
 		my $tx = $self->ua->post(@token_request);
@@ -170,8 +170,15 @@ sub _request_token {
 		my $params = $tx->res->body_params->to_hash;
 		die "OAuth callback was not confirmed\n"
 			unless $params->{oauth_callback_confirmed} eq 'true';
-		return $params;
+		return $self->_store_request_token($params);
 	}
+}
+
+sub _store_request_token {
+	my ($self, $params) = @_;
+	my $token = $params->{oauth_token};
+	$self->{_request_token_secrets}{$token} = $params->{oauth_token_secret};
+	return $token;
 }
 
 sub _request_token_request {
