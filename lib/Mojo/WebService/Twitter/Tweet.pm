@@ -1,7 +1,7 @@
 package Mojo::WebService::Twitter::Tweet;
 use Mojo::Base -base;
 
-use Date::Parse;
+use Mojo::WebService::Twitter::Util 'parse_twitter_timestamp';
 
 our $VERSION = '0.001';
 
@@ -31,7 +31,7 @@ sub fetch {
 sub _populate {
 	my $self = shift;
 	my $source = $self->source;
-	$self->created_at(str2time($source->{created_at}, 0));
+	$self->created_at(parse_twitter_timestamp($source->{created_at}));
 	$self->favorites($source->{favorite_count});
 	$self->id($source->{id_str});
 	$self->retweets($source->{retweet_count});

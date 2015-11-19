@@ -1,7 +1,7 @@
 package Mojo::WebService::Twitter::User;
 use Mojo::Base -base;
 
-use Date::Parse;
+use Mojo::WebService::Twitter::Util 'parse_twitter_timestamp';
 use Scalar::Util 'weaken';
 
 our $VERSION = '0.001';
@@ -34,7 +34,7 @@ sub fetch {
 sub _populate {
 	my $self = shift;
 	my $source = $self->source;
-	$self->created_at(str2time($source->{created_at}, 0));
+	$self->created_at(parse_twitter_timestamp($source->{created_at}));
 	$self->description($source->{description});
 	$self->followers($source->{followers_count});
 	$self->friends($source->{friends_count});

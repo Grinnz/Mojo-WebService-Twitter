@@ -4,6 +4,7 @@ use Mojo::Base 'Mojo::WebService';
 use Carp 'croak';
 use Mojo::Collection;
 use Mojo::URL;
+use Mojo::UserAgent;
 use Mojo::Util qw(b64_encode url_escape);
 use Mojo::WebService::Twitter::Tweet;
 use Mojo::WebService::Twitter::User;
@@ -14,6 +15,7 @@ our $OAUTH_ENDPOINT = 'https://api.twitter.com/oauth2/token';
 our $API_BASE_URL = 'https://api.twitter.com/1.1/';
 
 has ['api_key','api_secret'];
+has 'ua' => sub { Mojo::UserAgent->new };
 
 sub get_tweet {
 	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
@@ -23,16 +25,17 @@ sub get_tweet {
 		$self->_access_token(sub {
 			my ($self, $err, $token) = @_;
 			return $self->$cb($err) if $err;
-			$self->request(_api_request($token, 'statuses/show.json', id => $id), sub {
-				my ($self, $err, $res) = @_;
-				return $self->$cb($err) if $err;
-				$self->$cb(undef, $self->_tweet_object($res->json));
+			$self->ua->get(_api_request($token, 'statuses/show.json', id => $id), sub {
+				my ($ua, $tx) = @_;
+				return $self->$cb(_ua_error($tx->error)) if $tx->error;
+				$self->$cb(undef, $self->_tweet_object($tx->res->json));
 			});
 		});
 	} else {
 		my $token = $self->_access_token;
-		my $res = $self->request(_api_request($token, 'statuses/show.json', id => $id));
-		return $self->_tweet_object($res->json);
+		my $tx = $self->ua->get(_api_request($token, 'statuses/show.json', id => $id));
+		die _ua_error($tx->error) if $tx->error;
+		return $self->_tweet_object($tx->res->json);
 	}
 }
 
@@ -47,16 +50,17 @@ sub get_user {
 		$self->_access_token(sub {
 			my ($self, $err, $token) = @_;
 			return $self->$cb($err) if $err;
-			$self->request(_api_request($token, 'users/show.json', %query), sub {
-				my ($self, $err, $res) = @_;
-				return $self->$cb($err) if $err;
-				$self->$cb(undef, $self->_user_object($res->json));
+			$self->ua->get(_api_request($token, 'users/show.json', %query), sub {
+				my ($ua, $tx) = @_;
+				return $self->$cb(_ua_error($tx->error)) if $tx->error;
+				$self->$cb(undef, $self->_user_object($tx->res->json));
 			});
 		});
 	} else {
 		my $token = $self->_access_token;
-		my $res = $self->request(_api_request($token, 'users/show.json', %query));
-		return $self->_user_object($res->json);
+		my $tx = $self->ua->get(_api_request($token, 'users/show.json', %query));
+		die _ua_error($tx->error) if $tx->error;
+		return $self->_user_object($tx->res->json);
 	}
 }
 
@@ -79,16 +83,17 @@ sub search_tweets {
 		$self->_access_token(sub {
 			my ($self, $err, $token) = @_;
 			return $self->$cb($err) if $err;
-			$self->request(_api_request($token, 'search/tweets.json', %query), sub {
-				my ($self, $err, $res) = @_;
-				return $self->$cb($err) if $err;
-				$self->$cb(undef, Mojo::Collection->new(@{$res->json->{statuses} // []}));
+			$self->ua->get(_api_request($token, 'search/tweets.json', %query), sub {
+				my ($ua, $tx) = @_;
+				return $self->$cb(_ua_error($tx->error)) if $tx->error;
+				$self->$cb(undef, Mojo::Collection->new(@{$tx->res->json->{statuses} // []}));
 			});
 		});
 	} else {
 		my $token = $self->_access_token;
-		my $res = $self->request(_api_request($token, 'search/tweets.json', %query));
-		return Mojo::Collection->new(@{$res->json->{statuses} // []});
+		my $tx = $self->ua->get(_api_request($token, 'search/tweets.json', %query));
+		die _ua_error($tx->error) if $tx->error;
+		return Mojo::Collection->new(@{$tx->res->json->{statuses} // []});
 	}
 }
 
@@ -105,14 +110,14 @@ sub _access_token {
 	my @token_request = _access_token_request($api_key, $api_secret);
 	
 	if ($cb) {
-		$self->request(@token_request, sub {
-			my ($self, $err, $res) = @_;
-			return $self->$cb($err) if $err;
-			$self->$cb(undef, $self->{_access_token} = $res->json->{access_token});
+		$self->ua->post(@token_request, sub {
+			my ($ua, $tx) = @_;
+			return $self->$cb(_ua_error($tx->error)) if $tx->error;
+			$self->$cb(undef, $self->{_access_token} = $tx->res->json->{access_token});
 		});
 	} else {
-		my $res = $self->request(@token_request);
-		return $self->{_access_token} = $res->json->{access_token};
+		my $tx = $self->ua->post(@token_request);
+		return $self->{_access_token} = $tx->res->json->{access_token};
 	}
 }
 
@@ -123,14 +128,14 @@ sub _access_token_request {
 	my %headers = (Authorization => "Basic $bearer_token",
 		'Content-Type' => 'application/x-www-form-urlencoded;charset=UTF-8');
 	my %form = (grant_type => 'client_credentials');
-	return (post => $url, \%headers, form => \%form);
+	return ($url, \%headers, form => \%form);
 }
 
 sub _api_request {
 	my ($token, $endpoint, @query) = @_;
 	my $url = Mojo::URL->new($API_BASE_URL)->path($endpoint)->query(@query);
 	my %headers = (Authorization => "Bearer $token");
-	return (get => $url, \%headers);
+	return ($url, \%headers);
 }
 
 sub _tweet_object {
@@ -143,6 +148,13 @@ sub _user_object {
 	my ($self, $source) = @_;
 	my $user = Mojo::WebService::Twitter::User->new(twitter => $self, source => $source);
 	return $user;
+}
+
+sub _ua_error {
+	my $err = shift;
+	return $err->{code}
+		? "HTTP error $err->{code}: $err->{message}"
+		: "Connection error: $err->{message}";
 }
 
 1;
@@ -188,6 +200,14 @@ API key for your L<Twitter Application|https://apps.twitter.com>.
  $twitter       = $twitter->api_secret($api_secret);
 
 API secret for your L<Twitter Application|https://apps.twitter.com>.
+
+=head2 ua
+
+ my $ua      = $webservice->ua;
+ $webservice = $webservice->ua(Mojo::UserAgent->new);
+
+HTTP user agent object to use for synchronous and asynchronous requests,
+defaults to a L<Mojo::UserAgent> object.
 
 =head1 METHODS
 
@@ -300,4 +320,4 @@ This is free software, licensed under:
 
 =head1 SEE ALSO
 
-L<Mojo::WebService>
+L<Net::Twitter>

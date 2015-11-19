@@ -1,11 +1,12 @@
 use Mojolicious::Lite;
 use Mojo::Loader 'data_section';
 use List::Util 'first';
+use Time::Piece;
 
 my %tweet_data = (
 	'657606994744860672' => {
 		data_section => 'tweet',
-		created_at => 1445620699,
+		created_at => scalar gmtime(1445620699),
 		favorites => 382,
 		retweets => 289,
 		text => q{The @Space_Station crew works  ~9.5 hours a day, with ~4 hours free time during the week... https://t.co/2cdarZPqND https://t.co/HlAnj3eTKk},
@@ -13,7 +14,7 @@ my %tweet_data = (
 	},
 	'657324783294676992' => {
 		data_section => 'tweet_reply',
-		created_at => 1445553415,
+		created_at => scalar gmtime(1445553415),
 		favorites => 21,
 		retweets => 13,
 		text => q{@starlingLX @bnjacobs @StationCDRKelly @Flickr The higher-res is added but doesn't have @StationCDRKelly's edits...https://t.co/wnKeCAdLfg},
@@ -21,7 +22,7 @@ my %tweet_data = (
 	},
 	'657627567948587008' => {
 		data_section => 'tweet_retweet',
-		created_at => 1445625604,
+		created_at => scalar gmtime(1445625604),
 		favorites => 0,
 		retweets => 35897,
 		text => q{RT @StationCDRKelly: Hurricane #Patricia looks menacing from @space_station. Stay safe below, #Mexico. #YearInSpace https://t.co/6LP2xCYcGD},
@@ -32,11 +33,11 @@ my %tweet_data = (
 my %user_data = (
 	'1451773004' => {
 		data_section => 'user',
-		created_at => 1369322728,
+		created_at => scalar gmtime(1369322728),
 		description => q{NASA's page for updates from the International Space Station, the world-class lab orbiting Earth 250 miles above. For the latest research, follow @ISS_Research.},
 		followers => 314219,
 		friends => 230,
-		last_tweet_ts => 1445625604,
+		last_tweet_ts => scalar gmtime(1445625604),
 		name => 'Intl. Space Station',
 		protected => 0,
 		screen_name => 'Space_Station',
