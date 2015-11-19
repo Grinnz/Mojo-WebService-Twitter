@@ -90,22 +90,24 @@ EOW
       "recursive_test_files" => 1,
       "requires" => {
         "Carp" => 0,
+        "Digest::SHA" => 0,
         "Exporter" => 0,
         "IO::Socket::SSL" => "1.94",
+        "List::Util" => "1.29",
         "Mojolicious" => "6.0",
         "Scalar::Util" => 0,
         "Time::Piece" => 0,
         "perl" => "5.010001"
       },
       "test_requires" => {
-        "List::Util" => 0,
+        "List::Util" => "1.29",
         "Test::More" => "0.88"
       }
     );
 
 
     my %fallback_build_requires = (
-      "List::Util" => 0,
+      "List::Util" => "1.29",
       "Test::More" => "0.88"
     );
 

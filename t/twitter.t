@@ -83,7 +83,7 @@ if (defined $api_key and defined $api_secret) {
 	diag 'Running online test for Twitter';
 } else {
 	diag 'Running offline test for Twitter; set TWITTER_API_KEY/TWITTER_API_SECRET for online test';
-	$Mojo::WebService::Twitter::OAUTH_ENDPOINT = '/token';
+	$Mojo::WebService::Twitter::OAUTH2_ENDPOINT = '/token';
 	$Mojo::WebService::Twitter::API_BASE_URL = '/api/';
 	$api_key = 'foo';
 	$api_secret = 'bar';
