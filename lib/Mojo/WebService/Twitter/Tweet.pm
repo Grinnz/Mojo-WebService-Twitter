@@ -1,11 +1,13 @@
 package Mojo::WebService::Twitter::Tweet;
 use Mojo::Base -base;
 
+use Mojo::WebService::Twitter::User;
 use Mojo::WebService::Twitter::Util 'parse_twitter_timestamp';
 
 our $VERSION = '0.001';
 
-has [qw(twitter created_at favorites id retweets text user)];
+has [qw(twitter coordinates created_at favorites id retweets text)];
+has user => sub { Mojo::WebService::Twitter::User->new(twitter => shift->twitter) };
 
 sub fetch {
 	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
@@ -23,13 +25,15 @@ sub fetch {
 
 sub from_source {
 	my ($self, $source) = @_;
-	$self->created_at(parse_twitter_timestamp($source->{created_at}));
+	$self->coordinates($source->{coordinates}{coordinates}) if defined $source->{coordinates};
+	$self->created_at(parse_twitter_timestamp($source->{created_at})) if defined $source->{created_at};
 	$self->favorites($source->{favorite_count});
 	$self->id($source->{id_str});
 	$self->retweets($source->{retweet_count});
 	$self->text($source->{text});
 	if (defined $source->{user}) {
-		$self->user($self->twitter->_user_object($source->{user}));
+		delete $self->{user};
+		$self->user->from_source($source->{user});
 	}
 	return $self;
 }
@@ -64,6 +68,13 @@ for more information.
  $tweet      = $tweet->twitter(Mojo::WebService::Twitter->new);
 
 L<Mojo::WebService::Twitter> object used to make API requests.
+
+=head2 coordinates
+
+ my $coords = $tweet->coordinates;
+
+Array reference of geographic coordinates (longitude then latitude), or
+C<undef> if tweet does not have coordinates.
 
 =head2 created_at
 

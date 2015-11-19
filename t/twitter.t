@@ -6,6 +6,7 @@ use Time::Piece;
 my %tweet_data = (
 	'657606994744860672' => {
 		data_section => 'tweet',
+		coordinates => undef,
 		created_at => scalar gmtime(1445620699),
 		favorites => 382,
 		retweets => 289,
@@ -14,6 +15,7 @@ my %tweet_data = (
 	},
 	'657324783294676992' => {
 		data_section => 'tweet_reply',
+		coordinates => undef,
 		created_at => scalar gmtime(1445553415),
 		favorites => 21,
 		retweets => 13,
@@ -22,6 +24,7 @@ my %tweet_data = (
 	},
 	'657627567948587008' => {
 		data_section => 'tweet_retweet',
+		coordinates => undef,
 		created_at => scalar gmtime(1445625604),
 		favorites => 0,
 		retweets => 35897,
@@ -42,7 +45,9 @@ my %user_data = (
 		protected => 0,
 		screen_name => 'Space_Station',
 		statuses => 3228,
+		time_zone => 'Central Time (US & Canada)',
 		url => 'http://t.co/9Gk2GZYDsP',
+		utc_offset => -18000,
 		verified => 1,
 	},
 );
@@ -96,6 +101,7 @@ foreach my $id (keys %tweet_data) {
 	my $tweet;
 	ok(eval { $tweet = $twitter->get_tweet($id); 1 }, "retrieved tweet $id") or diag $@;
 	is $tweet->id, $id, 'right tweet ID';
+	is_deeply $tweet->coordinates, $data->{coordinates}, 'right coordinates';
 	is $tweet->created_at, $data->{created_at}, 'right creation timestamp';
 	ok $tweet->favorites >= $data->{favorites}, "at least $data->{favorites} favorites";
 	ok $tweet->retweets >= $data->{retweets}, "at least $data->{retweets} retweets";
@@ -122,7 +128,9 @@ foreach my $id (keys %user_data) {
 	is $user->name, $data->{name}, 'right name';
 	ok !($user->protected xor $data->{protected}), 'right protected status';
 	ok $user->statuses >= $data->{statuses}, "at least $data->{statuses} statuses";
+	is $user->time_zone, $data->{time_zone}, 'right time zone';
 	is $user->url, $data->{url}, 'right url';
+	cmp_ok $user->utc_offset, '==', $data->{utc_offset}, 'right UTC offset';
 	ok !($user->verified xor $data->{verified}), 'right verified status';
 	ok $user->last_tweet->created_at >= $data->{last_tweet_ts}, "last tweet after $data->{last_tweet_ts}";
 }

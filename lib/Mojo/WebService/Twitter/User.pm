@@ -1,13 +1,15 @@
 package Mojo::WebService::Twitter::User;
 use Mojo::Base -base;
 
+use Mojo::WebService::Twitter::Tweet;
 use Mojo::WebService::Twitter::Util 'parse_twitter_timestamp';
 use Scalar::Util 'weaken';
 
 our $VERSION = '0.001';
 
-has [qw(twitter created_at description followers friends id last_tweet
-	name protected screen_name statuses url verified)];
+has [qw(twitter created_at description followers friends id
+	name protected screen_name statuses time_zone url utc_offset verified)];
+has last_tweet => sub { Mojo::WebService::Twitter::User->new(twitter => shift->twitter) };
 
 sub fetch {
 	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
@@ -26,7 +28,7 @@ sub fetch {
 
 sub from_source {
 	my ($self, $source) = @_;
-	$self->created_at(parse_twitter_timestamp($source->{created_at}));
+	$self->created_at(parse_twitter_timestamp($source->{created_at})) if defined $source->{created_at};
 	$self->description($source->{description});
 	$self->followers($source->{followers_count});
 	$self->friends($source->{friends_count});
@@ -35,10 +37,13 @@ sub from_source {
 	$self->protected($source->{protected} ? 1 : 0);
 	$self->screen_name($source->{screen_name});
 	$self->statuses($source->{statuses_count});
+	$self->time_zone($source->{time_zone});
 	$self->url($source->{url});
+	$self->utc_offset($source->{utc_offset});
 	$self->verified($source->{verified} ? 1 : 0);
 	if (defined $source->{status}) {
-		$self->last_tweet(my $tweet = $self->twitter->_tweet_object($source->{status}));
+		delete $self->{last_tweet};
+		my $tweet = $self->last_tweet->from_source($source->{status});
 		weaken($tweet->{user} = $self);
 	}
 	return $self;
@@ -137,11 +142,23 @@ User's twitter screen name.
 
 Number of tweets the user has sent.
 
+=head2 time_zone
+
+ my $tz = $user->time_zone;
+
+String describing the user's time zone.
+
 =head2 url
 
  my $url = $user->url;
 
 User's profile URL.
+
+=head2 utc_offset
+
+ my $seconds = $user->utc_offset;
+
+User's current offset from UTC in seconds.
 
 =head2 verified
 
