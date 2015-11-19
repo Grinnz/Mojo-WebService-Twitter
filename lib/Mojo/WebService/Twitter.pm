@@ -1,5 +1,5 @@
 package Mojo::WebService::Twitter;
-use Mojo::Base 'Mojo::WebService';
+use Mojo::Base -base;
 
 use Carp 'croak';
 use Mojo::Collection;

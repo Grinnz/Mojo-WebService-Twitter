@@ -2,33 +2,45 @@
 
 =head1 NAME
 
-Mojo::WebService - Simple API client base class
+Mojo::WebService::Twitter - Simple Twitter API client
 
 =head1 SYNOPSIS
 
- package Mojo::WebService::Stuff;
- use Mojo::Base 'Mojo::WebService';
+ my $twitter = Mojo::WebService::Twitter->new(api_key => $api_key, api_secret => $api_secret);
  
- sub get_stuff {
-   my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
-   my ($self, $stuff) = @_;
-   my $url = Mojo::URL->new('http://example.com')->query(stuff => $stuff);
-   if ($cb) {
-     $self->request(get => $url, sub {
-       my ($self, $err, $res) = @_;
-       return $self->$cb($err) if $err;
-       $self->$cb(undef, $res->json);
-     });
-   } else {
-     return $self->request(get => $url)->json;
-   }
- }
+ # Blocking
+ my $user = $twitter->get_user(screen_name => $name);
+ 
+ # Non-blocking
+ $twitter->get_tweet($tweet_id, sub {
+   my ($twitter, $err, $tweet) = @_;
+ });
 
 =head1 DESCRIPTION
 
-L<Mojo::WebService> is a base class for L<Mojo::UserAgent> based API clients.
+L<Mojo::WebService::Twitter> is a L<Mojo::UserAgent> based
+L<Twitter|https://twitter.com> API client that can perform requests
+synchronously or asynchronously. An API key and secret for a
+L<Twitter Application|https://apps.twitter.com> are required.
 
 =head1 ATTRIBUTES
+
+L<Mojo::WebService::Twitter> inherits all attributes from L<Mojo::WebService>
+and implements the following new ones.
+
+=head2 api_key
+
+ my $api_key = $twitter->api_key;
+ $twitter    = $twitter->api_key($api_key);
+
+API key for your L<Twitter Application|https://apps.twitter.com>.
+
+=head2 api_secret
+
+ my $api_secret = $twitter->api_secret;
+ $twitter       = $twitter->api_secret($api_secret);
+
+API secret for your L<Twitter Application|https://apps.twitter.com>.
 
 =head2 ua
 
@@ -40,26 +52,96 @@ defaults to a L<Mojo::UserAgent> object.
 
 =head1 METHODS
 
-=head2 request
+L<Mojo::WebService::Twitter> inherits all methods from L<Mojo::WebService> and
+implements the following new ones.
 
- my $res     = $webservice->request($method => @args);
- $webservice = $webservice->request($method => @args, sub {
-   my ($webservice, $err, $res) = @_;
+=head2 get_tweet
+
+ my $tweet = $twitter->get_tweet($tweet_id);
+ $twitter->get_tweet($tweet_id, sub {
+   my ($twitter, $err, $tweet) = @_;
  });
 
-Build a HTTP request using L<Mojo::UserAgent/"build_tx"> and run blocking or
-non-blocking with L<Mojo::UserAgent/"start">. In blocking mode, the
-L<Mojo::Message::Response> is returned on success, and an exception is thrown
-on connection or HTTP error. If a callback is passed, the request will be
-performed non-blocking, and the connection or HTTP error (if any) will instead
-be passed to the callback.
+Retrieve a L<Mojo::WebService::Twitter::Tweet> by tweet ID.
 
-=head2 request_lenient
+=head2 get_user
 
-Run a HTTP request via L</"request">, but HTTP errors will not throw an
-exception or be returned in the callback. C<< $res->error >> can be used to
-check for specific HTTP errors, see L<Mojo::Message/"error">. Connection errors
-will still be reported normally.
+ my $user = $twitter->get_user(user_id => $user_id);
+ my $user = $twitter->get_user(screen_name => $screen_name);
+ $twitter->get_user(screen_name => $screen_name, sub {
+   my ($twitter, $err, $user) = @_;
+ });
+
+Retrieve a L<Mojo::WebService::Twitter::User> by user ID or screen name.
+
+=head2 search_tweets
+
+ my $tweets = $twitter->search_tweets($query);
+ my $tweets = $twitter->search_tweets($query, %options);
+ $twitter->search_tweets($query, %options, sub {
+   my ($twitter, $err, $tweets) = @_;
+ });
+
+Search Twitter and return a L<Mojo::Collection> of L<Mojo::WebService::Twitter::Tweet>
+objects. Accepts the following options:
+
+=over
+
+=item geocode
+
+ geocode => '37.781157,-122.398720,1mi'
+ geocode => ['37.781157','-122.398720','1mi']
+ geocode => {latitude => '37.781157', longitude => '-122.398720', radius => '1mi'}
+
+Restricts tweets to the given radius of the given latitude/longitude. Radius
+must be specified as C<mi> (miles) or C<km> (kilometers).
+
+=item lang
+
+ lang => 'eu'
+
+Restricts tweets to the given L<ISO 639-1|http://en.wikipedia.org/wiki/List_of_ISO_639-1_codes>
+language code.
+
+=item result_type
+
+ result_type => 'recent'
+
+Specifies what type of search results to receive. Valid values are C<recent>,
+C<popular>, and C<mixed> (default).
+
+=item count
+
+ count => 5
+
+Limits the search results per page. Maximum C<100>, default C<15>.
+
+=item until
+
+ until => '2015-07-19'
+
+Restricts tweets to those created before the given date, in the format
+C<YYYY-MM-DD>.
+
+=item since_id
+
+ since_id => '12345'
+
+Restricts results to those more recent than the given tweet ID. IDs should be
+specified as a string to avoid issues with large integers. See
+L<here|https://dev.twitter.com/rest/public/timelines> for more information on
+filtering results with C<since_id> and C<max_id>.
+
+=item max_id
+
+ max_id => '54321'
+
+Restricts results to those older than (or equal to) the given tweet ID. IDs
+should be specified as a string to avoid issues with large integers. See
+L<here|https://dev.twitter.com/rest/public/timelines> for more information on
+filtering results with C<since_id> and C<max_id>.
+
+=back
 
 =head1 BUGS
 
@@ -79,6 +161,6 @@ This is free software, licensed under:
 
 =head1 SEE ALSO
 
-L<Mojo::UserAgent>
+L<Net::Twitter>
 
 =cut

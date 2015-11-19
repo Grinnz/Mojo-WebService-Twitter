@@ -1,10 +1,10 @@
 {
-   "abstract" : "Simple API client base class",
+   "abstract" : "Simple Twitter API client",
    "author" : [
       "Dan Book <dbook@cpan.org>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Dist::Zilla version 5.040, CPAN::Meta::Converter version 2.150005",
+   "generated_by" : "Dist::Zilla version 5.041, CPAN::Meta::Converter version 2.150005",
    "license" : [
       "artistic_2"
    ],
@@ -12,7 +12,7 @@
       "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
       "version" : 2
    },
-   "name" : "Mojo-WebService",
+   "name" : "Mojo-WebService-Twitter",
    "no_index" : {
       "directory" : [
          "eg",
@@ -39,10 +39,11 @@
       "runtime" : {
          "requires" : {
             "Carp" : "0",
-            "Date::Parse" : "0",
+            "Exporter" : "0",
             "IO::Socket::SSL" : "1.94",
             "Mojolicious" : "6.0",
             "Scalar::Util" : "0",
+            "Time::Piece" : "0",
             "perl" : "5.010001"
          }
       },
@@ -54,10 +55,6 @@
       }
    },
    "provides" : {
-      "Mojo::WebService" : {
-         "file" : "lib/Mojo/WebService.pm",
-         "version" : "0.001"
-      },
       "Mojo::WebService::Twitter" : {
          "file" : "lib/Mojo/WebService/Twitter.pm",
          "version" : "0.001"
@@ -69,18 +66,22 @@
       "Mojo::WebService::Twitter::User" : {
          "file" : "lib/Mojo/WebService/Twitter/User.pm",
          "version" : "0.001"
+      },
+      "Mojo::WebService::Twitter::Util" : {
+         "file" : "lib/Mojo/WebService/Twitter/Util.pm",
+         "version" : "0.001"
       }
    },
    "release_status" : "stable",
    "resources" : {
       "bugtracker" : {
-         "web" : "https://github.com/Grinnz/Mojo-WebService/issues"
+         "web" : "https://github.com/Grinnz/Mojo-WebService-Twitter/issues"
       },
-      "homepage" : "https://github.com/Grinnz/Mojo-WebService",
+      "homepage" : "https://github.com/Grinnz/Mojo-WebService-Twitter",
       "repository" : {
          "type" : "git",
-         "url" : "https://github.com/Grinnz/Mojo-WebService.git",
-         "web" : "https://github.com/Grinnz/Mojo-WebService"
+         "url" : "https://github.com/Grinnz/Mojo-WebService-Twitter.git",
+         "web" : "https://github.com/Grinnz/Mojo-WebService-Twitter"
       }
    },
    "version" : "0.001",
