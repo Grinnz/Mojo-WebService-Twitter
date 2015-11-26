@@ -294,7 +294,7 @@ sub _oauth_request {
 	# All oauth parameters should be moved to the header
 	$oauth_params{$_} = delete $form->{$_} for grep { m/^oauth_/ } keys %$form;
 	
-	$oauth_params{oauth_signature} = _oauth_signature($method, $url->clone->fragment('')->query('')->to_string,
+	$oauth_params{oauth_signature} = _oauth_signature($method, $url->clone->fragment(undef)->query(undef)->to_string,
 		[@{$url->query->pairs}, %{$form // {}}, %oauth_params], $api_secret, $oauth_secret);
 	my $auth_str = join ', ', map { $_ . '="' . url_escape($oauth_params{$_}) . '"' } sort keys %oauth_params;
 	
