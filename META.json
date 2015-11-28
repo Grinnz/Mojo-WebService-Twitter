@@ -69,6 +69,10 @@
          "file" : "lib/Mojo/WebService/Twitter/OAuth.pm",
          "version" : "0.001"
       },
+      "Mojo::WebService::Twitter::OAuth2" : {
+         "file" : "lib/Mojo/WebService/Twitter/OAuth2.pm",
+         "version" : "0.001"
+      },
       "Mojo::WebService::Twitter::Tweet" : {
          "file" : "lib/Mojo/WebService/Twitter/Tweet.pm",
          "version" : "0.001"

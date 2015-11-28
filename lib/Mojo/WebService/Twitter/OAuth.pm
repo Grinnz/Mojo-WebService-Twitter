@@ -13,9 +13,9 @@ use Mojo::WebService::Twitter::User;
 
 our $VERSION = '0.001';
 
+has [qw(access_token access_secret)];
 has 'twitter' => sub { Mojo::WebService::Twitter->new };
 has 'user' => sub { Mojo::WebService::Twitter::User->new(twitter => shift->twitter) };
-has [qw(access_token access_secret)];
 
 sub authorize_request {
 	my ($self, $tx, $token, $secret) = @_;
@@ -89,30 +89,6 @@ sub _from_verify {
 	return $user;
 }
 
-sub verify_credentials {
-	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
-	my ($self) = @_;
-	
-	my $ua = $self->twitter->ua;
-	my $tx = $ua->build_tx(GET => _api_url('account/verify_credentials.json'));
-	$self->authorize_request($tx);
-	
-	if ($cb) {
-		$ua->start($tx, sub {
-			my ($ua, $tx) = @_;
-			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
-			$self->user(my $user = Mojo::WebService::Twitter::User->new(twitter => $self->twitter)->from_source($tx->res->json));
-			$self->$cb(undef, $user);
-		});
-	} else {
-		$tx = $ua->start($tx);
-		$self->user(my $user = Mojo::WebService::Twitter::User->new(twitter => $self->twitter)->from_source($tx->res->json));
-		return $user;
-	}
-}
-
-sub _api_url { Mojo::URL->new($Mojo::WebService::Twitter::API_BASE_URL)->path(shift) }
-
 sub _oauth_url { Mojo::URL->new($Mojo::WebService::Twitter::OAUTH_BASE_URL)->path(shift) }
 
 sub _authorize_oauth {
@@ -173,13 +149,12 @@ Mojo::WebService::Twitter::OAuth - OAuth 1.0a client for Twitter
  my $oauth = Mojo::WebService::Twitter::OAuth->new(twitter => $twitter);
  
  my $url = $oauth->get_authorize_url;
- my $user = $oauth->verify_authorization($pin);
- my $user = $oauth->verify_credentials;
+ my $user = $oauth->verify_authorization($pin)->fetch;
 
 =head1 DESCRIPTION
 
-L<Mojo::WebService::Twitter::OAuth> is an OAuth 1.0a client for
-L<Mojo::WebService::Twitter> to authorize actions on behalf of a specific user.
+L<Mojo::WebService::Twitter::OAuth> allows L<Mojo::WebService::Twitter> to
+authorize actions on behalf of a specific user using OAuth 1.0a.
 
 =head1 ATTRIBUTES
 
@@ -197,14 +172,14 @@ L<Mojo::WebService::Twitter> object used to make API requests.
  my $token = $oauth->access_token;
  $oauth    = $oauth->access_token($token);
 
-OAuth access token used to authorize requests.
+OAuth access token used to authorize API requests.
 
 =head2 access_secret
 
  my $secret = $oauth->access_secret;
  $oauth     = $oauth->access_secret($secret);
 
-OAuth access token secret used to authorize requests.
+OAuth access token secret used to authorize API requests.
 
 =head2 user
 
@@ -212,12 +187,12 @@ OAuth access token secret used to authorize requests.
  $oauth   = $oauth->user($user);
 
 L<Mojo::WebService::Twitter::User> object representing authorizing user,
-set by a successful L</"verify_authorization"> or L</"verify_credentials">.
+set by a successful L</"verify_authorization">.
 
 =head1 METHODS
 
-L<Mojo::WebService::Twitter> inherits all methods from L<Mojo::Base>, and
-implements the following new ones.
+L<Mojo::WebService::Twitter::OAuth> inherits all methods from L<Mojo::Base>,
+and implements the following new ones.
 
 =head2 authorize_request
 
@@ -252,17 +227,6 @@ L</"access_secret">, and will be used for requests on behalf of the authorizing
 user. The returned L<Mojo::WebService::Twitter::User> will be initialized with
 the authorizing user's ID and screen name, and stored in the L</"user">
 attribute.
-
-=head2 verify_credentials
-
- my $user = $oauth->verify_credentials;
- $oauth->verify_credentials(sub {
-   my ($oauth, $error, $user) = @_;
- });
-
-Verify the stored L</"access_token"> and L</"access_secret">. On success, the
-returned L<Mojo::WebService::Twitter::User> object will be fully initialized
-and stored in the L</"user"> attribute.
 
 =head1 BUGS
 
