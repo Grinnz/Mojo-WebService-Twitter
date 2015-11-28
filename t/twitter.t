@@ -97,7 +97,7 @@ ok !eval { $twitter->get_tweet("657618739492474880"); 1 }, 'no API key set';
 is $twitter->api_key($api_key)->api_key, $api_key, 'set API key';
 is $twitter->api_secret($api_secret)->api_secret, $api_secret, 'set API secret';
 
-$twitter->authorization->get_bearer_token;
+$twitter->authorization($twitter->request_oauth2);
 
 foreach my $id (keys %tweet_data) {
 	my $data = $tweet_data{$id};

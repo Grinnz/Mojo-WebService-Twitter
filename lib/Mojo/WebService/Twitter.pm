@@ -10,6 +10,7 @@ use Mojo::Util qw(b64_encode url_escape);
 use Mojo::WebService::Twitter::Error 'twitter_tx_error';
 use Mojo::WebService::Twitter::OAuth;
 use Mojo::WebService::Twitter::OAuth2;
+use Mojo::WebService::Twitter::OAuthRequest;
 use Mojo::WebService::Twitter::Tweet;
 use Mojo::WebService::Twitter::User;
 
@@ -36,6 +37,71 @@ sub authorization {
 		croak "Unknown authorization $auth";
 	}
 	return $self;
+}
+
+sub request_oauth {
+	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
+	my ($self, $url) = @_;
+	$url //= 'oob';
+	
+	my $ua = $self->ua;
+	my $tx = $ua->build_tx(POST => _oauth_url('request_token'), form => { oauth_callback => $url });
+	$self->_oauth->authorize_request($tx);
+	
+	if ($cb) {
+		$ua->start($tx, sub {
+			my ($ua, $tx) = @_;
+			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
+			my $oreq = $self->_from_oauth_request($tx) // return $self->$cb('OAuth callback was not confirmed');
+			$self->$cb(undef, $oreq);
+		});
+	} else {
+		$tx = $ua->start($tx);
+		die twitter_tx_error($tx) . "\n" if $tx->error;
+		my $oreq = $self->_from_oauth_request($tx) // die "OAuth callback was not confirmed\n";
+		return $oreq;
+	}
+}
+
+sub _from_oauth_request {
+	my ($self, $tx) = @_;
+	my $params = Mojo::Parameters->new($tx->res->text)->to_hash;
+	return undef unless $params->{oauth_callback_confirmed} eq 'true'
+		and defined $params->{oauth_token} and defined $params->{oauth_token_secret};
+	return Mojo::WebService::Twitter::OAuthRequest->new(twitter => $self,
+		request_token => $params->{oauth_token}, request_secret => $params->{oauth_token_secret});
+}
+
+sub request_oauth2 {
+	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
+	my $self = shift;
+	
+	my ($api_key, $api_secret) = ($self->api_key, $self->api_secret);
+	croak 'Twitter API key and secret are required' unless defined $api_key and defined $api_secret;
+	my $token = b64_encode(url_escape($api_key) . ':' . url_escape($api_secret), '');
+	my $ua = $self->ua;
+	my $tx = $ua->build_tx(POST => _oauth2_url('token'), form => { grant_type => 'client_credentials' });
+	$tx->req->headers->authorization("Basic $token");
+	
+	if ($cb) {
+		$ua->start($tx, sub {
+			my ($ua, $tx) = @_;
+			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
+			$self->$cb(undef, $self->_from_oauth2_request($tx));
+		});
+	} else {
+		$tx = $ua->start($tx);
+		die twitter_tx_error($tx) . "\n" if $tx->error;
+		return $self->_from_oauth2_request($tx);
+	}
+}
+
+sub _from_oauth2_request {
+	my ($self, $tx) = @_;
+	my $token = ($tx->res->json // {})->{access_token} // return undef;
+	my $oauth2 = Mojo::WebService::Twitter::OAuth2->new(twitter => $self, bearer_token => $token);
+	weaken $oauth2->{twitter};
+	return $oauth2;
 }
 
 sub get_tweet {
@@ -137,6 +203,10 @@ sub verify_credentials {
 
 sub _api_url { Mojo::URL->new($API_BASE_URL)->path(shift) }
 
+sub _oauth_url { Mojo::URL->new($OAUTH_BASE_URL)->path(shift) }
+
+sub _oauth2_url { Mojo::URL->new($OAUTH2_BASE_URL)->path(shift) }
+
 sub _oauth {
 	my $self = shift;
 	my $oauth = Mojo::WebService::Twitter::OAuth->new(twitter => $self, @_);
@@ -170,7 +240,7 @@ Mojo::WebService::Twitter - Simple Twitter API client
 =head1 SYNOPSIS
 
  my $twitter = Mojo::WebService::Twitter->new(api_key => $api_key, api_secret => $api_secret);
- $twitter->authorization->get_bearer_token;
+ $twitter->authorization($twitter->request_oauth2);
  
  # Blocking
  my $user = $twitter->get_user(screen_name => $name);
@@ -238,10 +308,37 @@ implements the following new ones.
  $twitter  = $twitter->authorization('oauth2', bearer_token => $token);
  $twitter  = $twitter->authorization('oauth', access_token => $token, access_secret => $secret);
 
-Get or set object used to authorize API requests. If the first argument is
-C<oauth>, a L<Mojo::WebService::Twitter::OAuth> object will be created. If the
-first argument is C<oauth2>, a L<Mojo::WebService::Twitter::OAuth2> object will
-be created. Defaults to OAuth 2.
+Get or set object used to authorize API requests. The authorizer can be set to
+C<oauth> to create a L<Mojo::WebService::Twitter::OAuth> object, C<oauth2> to
+create a L<Mojo::WebService::Twitter::OAuth2> object, or an authorizer object
+that has already been instantiated.
+
+=head2 request_oauth
+
+ my $oreq = $twitter->request_oauth;
+ my $oreq = $twitter->request_oauth($callback_url);
+ $twitter->request_oauth(sub {
+   my ($twitter, $error, $oreq) = @_;
+ });
+
+Send an OAuth 1.0a authorization request and return a
+L<Mojo::WebService::Twitter::OAuthRequest> object representing the request. An
+optional OAuth callback URL may be passed; by default, C<oob> is passed to use
+PIN-based authorization. After authorization, the user will either be
+redirected to the callback URL with the query parameter C<oauth_verifier>, or
+receive a PIN to return to the application. Either the verifier string or PIN
+should be passed to L<Mojo::WebService::Twitter::OAuthRequest/"verify_authorization">
+to retrieve a L<Mojo::WebService::Twitter::OAuth> to use for authorization.
+
+=head2 request_oauth2
+
+ my $oauth2 = $twitter->request_oauth2;
+ $twitter->request_oauth2(sub {
+   my ($twitter, $error, $oauth2) = @_;
+ });
+
+Request OAuth 2 credentials and return a L<Mojo::WebService::Twitter::OAuth2>
+object to use for authorization on behalf of the application itself.
 
 =head2 get_tweet
 
