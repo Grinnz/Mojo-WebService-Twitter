@@ -24,13 +24,14 @@ sub get_tweet {
 	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
 	my ($self, $id) = @_;
 	croak 'Tweet id is required for get_tweet' unless defined $id;
-	my $url = _api_url('statuses/show.json')->query(id => $id);
+	my $ua = $self->ua;
+	my $tx = $ua->build_tx(GET => _api_url('statuses/show.json')->query(id => $id));
 	if ($cb) {
 		$self->_oauth2_access_token(sub {
 			my ($self, $err, $token) = @_;
 			return $self->$cb($err) if $err;
-			my $tx = _authorize_oauth2($self->ua->build_tx(GET => $url), $token);
-			$self->ua->start($tx, sub {
+			_authorize_oauth2($tx, $token);
+			$ua->start($tx, sub {
 				my ($ua, $tx) = @_;
 				return $self->$cb(twitter_tx_error($tx)) if $tx->error;
 				$self->$cb(undef, $self->_tweet_object($tx->res->json));
@@ -38,7 +39,7 @@ sub get_tweet {
 		});
 	} else {
 		my $token = $self->_oauth2_access_token;
-		my $tx = $self->ua->start(_authorize_oauth2($self->ua->build_tx(GET => $url), $token));
+		$tx = $ua->start(_authorize_oauth2($tx, $token));
 		die twitter_tx_error($tx) . "\n" if $tx->error;
 		return $self->_tweet_object($tx->res->json);
 	}
@@ -51,13 +52,14 @@ sub get_user {
 	$query{user_id} = $params{user_id} if defined $params{user_id};
 	$query{screen_name} = $params{screen_name} if defined $params{screen_name};
 	croak 'user_id or screen_name is required for get_user' unless %query;
-	my $url = _api_url('users/show.json')->query(%query);
+	my $ua = $self->ua;
+	my $tx = $ua->build_tx(GET => _api_url('users/show.json')->query(%query));
 	if ($cb) {
 		$self->_oauth2_access_token(sub {
 			my ($self, $err, $token) = @_;
 			return $self->$cb($err) if $err;
-			my $tx = _authorize_oauth2($self->ua->build_tx(GET => $url), $token);
-			$self->ua->start($tx, sub {
+			_authorize_oauth2($tx, $token);
+			$ua->start($tx, sub {
 				my ($ua, $tx) = @_;
 				return $self->$cb(twitter_tx_error($tx)) if $tx->error;
 				$self->$cb(undef, $self->_user_object($tx->res->json));
@@ -65,7 +67,7 @@ sub get_user {
 		});
 	} else {
 		my $token = $self->_oauth2_access_token;
-		my $tx = $self->ua->start(_authorize_oauth2($self->ua->build_tx(GET => $url), $token));
+		$tx = $ua->start(_authorize_oauth2($tx, $token));
 		die twitter_tx_error($tx) . "\n" if $tx->error;
 		return $self->_user_object($tx->res->json);
 	}
@@ -86,13 +88,14 @@ sub search_tweets {
 	}
 	$query{geocode} = $geocode if defined $geocode;
 	$query{$_} = $params{$_} for grep { defined $params{$_} } qw(lang result_type count until since_id max_id);
-	my $url = _api_url('search/tweets.json')->query(%query);
+	my $ua = $self->ua;
+	my $tx = $ua->build_tx(GET => _api_url('search/tweets.json')->query(%query));
 	if ($cb) {
 		$self->_oauth2_access_token(sub {
 			my ($self, $err, $token) = @_;
 			return $self->$cb($err) if $err;
-			my $tx = _authorize_oauth2($self->ua->build_tx(GET => $url), $token);
-			$self->ua->start($tx, sub {
+			_authorize_oauth2($tx, $token);
+			$ua->start($tx, sub {
 				my ($ua, $tx) = @_;
 				return $self->$cb(twitter_tx_error($tx)) if $tx->error;
 				$self->$cb(undef, Mojo::Collection->new(@{$tx->res->json->{statuses} // []}));
@@ -100,7 +103,7 @@ sub search_tweets {
 		});
 	} else {
 		my $token = $self->_oauth2_access_token;
-		my $tx = $self->ua->start(_authorize_oauth2($self->ua->build_tx(GET => $url), $token));
+		$tx = $ua->start(_authorize_oauth2($tx, $token));
 		die twitter_tx_error($tx) . "\n" if $tx->error;
 		return Mojo::Collection->new(@{$tx->res->json->{statuses} // []});
 	}
@@ -124,17 +127,18 @@ sub _oauth2_access_token {
 		unless defined $api_key and defined $api_secret;
 	my $url = _oauth2_url('token');
 	my $bearer_token = b64_encode(url_escape($api_key) . ':' . url_escape($api_secret), '');
-	my $tx = $self->ua->build_tx(POST => $url, form => { grant_type => 'client_credentials' });
+	my $ua = $self->ua;
+	my $tx = $ua->build_tx(POST => $url, form => { grant_type => 'client_credentials' });
 	_authorize_oauth2($tx, $bearer_token);
 	
 	if ($cb) {
-		$self->ua->start($tx, sub {
+		$ua->start($tx, sub {
 			my ($ua, $tx) = @_;
 			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
 			$self->$cb(undef, $self->{_oauth2_access_token} = $tx->res->json->{access_token});
 		});
 	} else {
-		$tx = $self->ua->start($tx);
+		$tx = $ua->start($tx);
 		die twitter_tx_error($tx) . "\n" if $tx->error;
 		return $self->{_oauth2_access_token} = $tx->res->json->{access_token};
 	}

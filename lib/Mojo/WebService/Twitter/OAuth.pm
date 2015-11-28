@@ -17,24 +17,31 @@ has 'twitter' => sub { Mojo::WebService::Twitter->new };
 has 'user' => sub { Mojo::WebService::Twitter::User->new(twitter => shift->twitter) };
 has [qw(access_token access_secret)];
 
+sub authorize_request {
+	my ($self, $tx, $token, $secret) = @_;
+	my ($api_key, $api_secret) = ($self->twitter->api_key, $self->twitter->api_secret);
+	croak 'Twitter API key and secret are required' unless defined $api_key and defined $api_secret;
+	($token, $secret) = ($self->access_token, $self->access_secret) unless defined $token and defined $secret;
+	return _authorize_oauth($tx, $api_key, $api_secret, $token, $secret);
+}
+
 sub get_authorize_url {
 	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
 	my $self = shift;
 	
-	my ($api_key, $api_secret) = ($self->twitter->api_key, $self->twitter->api_secret);
-	croak 'Twitter API key and secret are required' unless defined $api_key and defined $api_secret;
-	my $tx = $self->twitter->ua->build_tx(POST => _oauth_url('request_token'), form => { oauth_callback => 'oob' });
-	_authorize_oauth($tx, $api_key, $api_secret);
+	my $ua = $self->twitter->ua;
+	my $tx = $ua->build_tx(POST => _oauth_url('request_token'), form => { oauth_callback => 'oob' });
+	$self->authorize_request($tx);
 	
 	if ($cb) {
-		$self->twitter->ua->start($tx, sub {
+		$ua->start($tx, sub {
 			my ($ua, $tx) = @_;
 			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
 			my $token = $self->_from_request($tx) // return $self->$cb('OAuth callback was not confirmed');
 			$self->$cb(undef, _oauth_url('authorize')->query(oauth_token => $token));
 		});
 	} else {
-		$tx = $self->twitter->ua->start($tx);
+		$tx = $ua->start($tx);
 		die twitter_tx_error($tx) . "\n" if $tx->error;
 		my $token = $self->_from_request($tx) // die "OAuth callback was not confirmed\n";
 		return _oauth_url('authorize')->query(oauth_token => $token);
@@ -56,19 +63,18 @@ sub verify_authorization {
 	my $request_token = $self->{_request_token} // croak 'Request token has not been generated';
 	my $request_secret = $self->{_request_secret} // croak 'Request token has not been generated';
 	
-	my ($api_key, $api_secret) = ($self->twitter->api_key, $self->twitter->api_secret);
-	croak 'Twitter API key and secret are required' unless defined $api_key and defined $api_secret;
-	my $tx = $self->twitter->ua->build_tx(POST => _oauth_url('access_token'), form => { oauth_verifier => $pin });
-	_authorize_oauth($tx, $api_key, $api_secret, $request_token, $request_secret);
+	my $ua = $self->twitter->ua;
+	my $tx = $ua->build_tx(POST => _oauth_url('access_token'), form => { oauth_verifier => $pin });
+	$self->authorize_request($tx, $request_token, $request_secret);
 	
 	if ($cb) {
-		$self->twitter->ua->start($tx, sub {
+		$ua->start($tx, sub {
 			my ($ua, $tx) = @_;
 			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
 			$self->$cb(undef, $self->_from_verify($tx));
 		});
 	} else {
-		$tx = $self->twitter->ua->start($tx);
+		$tx = $ua->start($tx);
 		return $self->_from_verify($tx);
 	}
 }
@@ -87,24 +93,19 @@ sub verify_credentials {
 	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
 	my ($self) = @_;
 	
-	my ($api_key, $api_secret) = ($self->twitter->api_key, $self->twitter->api_secret);
-	croak 'Twitter API key and secret are required' unless defined $api_key and defined $api_secret;
-	my ($access_token, $access_secret) = ($self->access_token, $self->access_secret);
-	croak 'Access credentials are required' unless defined $access_token and defined $access_secret;
-	
-	my $tx = $self->twitter->ua->build_tx(GET => _api_url('account/verify_credentials.json'));
-	_authorize_oauth($tx, $api_key, $api_secret, $access_token, $access_secret);
+	my $ua = $self->twitter->ua;
+	my $tx = $ua->build_tx(GET => _api_url('account/verify_credentials.json'));
+	$self->authorize_request($tx);
 	
 	if ($cb) {
-		$self->twitter->ua->start($tx, sub {
+		$ua->start($tx, sub {
 			my ($ua, $tx) = @_;
 			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
 			$self->user(my $user = Mojo::WebService::Twitter::User->new(twitter => $self->twitter)->from_source($tx->res->json));
 			$self->$cb(undef, $user);
 		});
 	} else {
-		$tx = $self->twitter->ua->start($tx);
-			warn $tx->res->body;
+		$tx = $ua->start($tx);
 		$self->user(my $user = Mojo::WebService::Twitter::User->new(twitter => $self->twitter)->from_source($tx->res->json));
 		return $user;
 	}
@@ -217,6 +218,14 @@ set by a successful L</"verify_authorization"> or L</"verify_credentials">.
 
 L<Mojo::WebService::Twitter> inherits all methods from L<Mojo::Base>, and
 implements the following new ones.
+
+=head2 authorize_request
+
+ $tx = $oauth->authorize_request($tx);
+ $tx = $oauth->authorize_request($tx, $token, $secret);
+
+Authorize a L<Mojo::Transaction> for OAuth 1.0 using the given token and secret
+or L</"access_token"> and L</"access_secret">.
 
 =head2 get_authorize_url
 
