@@ -142,15 +142,18 @@ sub _oauth_signature {
 
 =head1 NAME
 
-Mojo::WebService::Twitter::OAuth - OAuth 1.0a client for Twitter
+Mojo::WebService::Twitter::OAuth - OAuth 1.0a authorization for Twitter
 
 =head1 SYNOPSIS
 
- my $oauth = Mojo::WebService::Twitter::OAuth->new(twitter => $twitter);
+ my $twitter = Mojo::WebService::Twitter->new(api_key => $api_key, api_secret => $api_secret);
+ $twitter->authorization('oauth');
+ my $oauth = $twitter->authorization;
  
  my $url = $oauth->get_authorize_url;
- my $user = $oauth->verify_authorization($pin)->fetch;
-
+ my $user = $oauth->verify_authorization($pin);
+ $oauth->authorize_request($tx);
+ 
 =head1 DESCRIPTION
 
 L<Mojo::WebService::Twitter::OAuth> allows L<Mojo::WebService::Twitter> to
@@ -199,8 +202,8 @@ and implements the following new ones.
  $tx = $oauth->authorize_request($tx);
  $tx = $oauth->authorize_request($tx, $token, $secret);
 
-Authorize a L<Mojo::Transaction> for OAuth 1.0 using the given token and secret
-or L</"access_token"> and L</"access_secret">.
+Authorize a L<Mojo::Transaction> for OAuth 1.0a using the given token and
+secret or L</"access_token"> and L</"access_secret">.
 
 =head2 get_authorize_url
 

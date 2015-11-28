@@ -55,8 +55,10 @@ Mojo::WebService::Twitter::OAuth2 - OAuth 2 authorization for Twitter
 
 =head1 SYNOPSIS
 
- my $oauth = Mojo::WebService::Twitter::OAuth2->new(twitter => $twitter);
- $oauth->get_bearer_token->authorize_request($tx);
+ my $twitter = Mojo::WebService::Twitter->new(api_key => $api_key, api_secret => $api_secret);
+ $twitter->authorization('oauth2');
+ my $oauth2 = $twitter->authorization;
+ $oauth2->get_bearer_token->authorize_request($tx);
 
 =head1 DESCRIPTION
 
@@ -69,15 +71,15 @@ L<Mojo::WebService::Twitter::OAuth2> implements the following attributes.
 
 =head2 twitter
 
- my $twitter = $oauth->twitter;
- $oauth      = $oauth->twitter(Mojo::WebService::Twitter->new);
+ my $twitter = $oauth2->twitter;
+ $oauth2     = $oauth2->twitter(Mojo::WebService::Twitter->new);
 
 L<Mojo::WebService::Twitter> object used to make API requests.
 
 =head2 bearer_token
 
- my $token = $oauth->bearer_token;
- $oauth    = $oauth->bearer_token($token);
+ my $token = $oauth2->bearer_token;
+ $oauth2   = $oauth2->bearer_token($token);
 
 OAuth 2 bearer token used to authorize API requests.
 
@@ -88,17 +90,17 @@ and implements the following new ones.
 
 =head2 authorize_request
 
- $tx = $oauth->authorize_request($tx);
- $tx = $oauth->authorize_request($tx, $token);
+ $tx = $oauth2->authorize_request($tx);
+ $tx = $oauth2->authorize_request($tx, $token);
 
 Authorize a L<Mojo::Transaction> for OAuth 2 using the given bearer token or
 L</"bearer_token">.
 
 =head2 get_bearer_token
 
- $oauth = $oauth->get_bearer_token;
- $oauth->get_bearer_token(sub {
-   my ($oauth, $error) = @_;
+ $oauth2 = $oauth2->get_bearer_token;
+ $oauth2->get_bearer_token(sub {
+   my ($oauth2, $error) = @_;
  });
 
 Retrieve the OAuth 2 bearer token to use for authorization and store it as
