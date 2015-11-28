@@ -133,7 +133,7 @@ sub _oauth_signature {
 	my @param_pairs = sort { $a->[0] cmp $b->[0] } pairs map { url_escape(encode 'UTF-8', $_) } @params;
 	my $params_str = join '&', map { $_->[0] . '=' . $_->[1] } @param_pairs;
 	
-	my $base_url = $request_url->clone->fragment(undef)->query(undef)->to_string;
+	my $base_url = $request_url->clone->fragment(undef)->query('')->to_string;
 	my $signature_str = uc($method) . '&' . url_escape($base_url) . '&' . url_escape($params_str);
 	my $signing_key = url_escape($api_secret) . '&' . url_escape($oauth_secret // '');
 	return b64_encode(hmac_sha1($signature_str, $signing_key), '');

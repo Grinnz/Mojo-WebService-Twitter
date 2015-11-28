@@ -15,16 +15,16 @@ $twitter->api_secret($api_secret);
 
 $twitter->authorization('oauth');
 my $url = $twitter->authorization->get_authorize_url;
-print "Please go to the following URL to authorize this Twitter application to use your credentials.\n";
+print "Please go to the following URL to authorize this Twitter application to make requests on your behalf.\n";
 print "$url\n";
 
 print "Enter authorization PIN: ";
 chomp(my $pin = readline STDIN);
 
-my $user = $twitter->authorization->verify_authorization($pin);
+my $user = $twitter->authorization->verify_authorization($pin)->fetch;
 my $access_token = $twitter->authorization->access_token;
 my $access_secret = $twitter->authorization->access_secret;
 
-print "OAuth credentials for " . $user->screen_name . ":\n";
+print "OAuth credentials for \@" . $user->screen_name . ":\n";
 print "Access token: $access_token\n";
 print "Access token secret: $access_secret\n";
