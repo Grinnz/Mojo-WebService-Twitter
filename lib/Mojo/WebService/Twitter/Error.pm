@@ -1,12 +1,17 @@
 package Mojo::WebService::Twitter::Error;
 use Mojo::Base -base;
 
+use Exporter 'import';
+
 use overload bool => sub {1}, '""' => sub { shift->to_string }, fallback => 1;
 
 our $VERSION = '0.001';
+our @EXPORT_OK = qw(twitter_tx_error);
 
 has 'api_errors' => sub { [] };
 has ['connection_error','http_status','http_message'];
+
+sub twitter_tx_error ($) { __PACKAGE__->new->from_tx(shift) }
 
 sub from_tx {
 	my ($self, $tx) = @_;
@@ -17,7 +22,7 @@ sub from_tx {
 	$self->http_message($res->message);
 	return $self unless my $err = $res->error;
 	$self->connection_error($err->{message}) unless defined $err->{code};
-	return $self->api_errors($res->json->{errors} // []);
+	return $self->api_errors(($res->json // {})->{errors} // []);
 }
 
 sub to_string {
@@ -48,6 +53,17 @@ Mojo::WebService::Twitter::Error - Container for API errors
 L<Mojo::WebService::Twitter::Error> is a container for
 L<API errors|https://dev.twitter.com/overview/api/response-codes> received from
 the Twitter API via L<Mojo::WebService::Twitter>.
+
+=head1 FUNCTIONS
+
+L<Mojo::WebService::Twitter::Error> exports the following functions on demand.
+
+=head2 twitter_tx_error
+
+ my $error = twitter_tx_error($tx);
+
+Creates a new L<Mojo::WebService::Twitter::Error> and populates it using
+L</"from_tx">.
 
 =head1 ATTRIBUTES
 

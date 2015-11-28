@@ -52,7 +52,7 @@ my %user_data = (
 	},
 );
 
-post '/token' => { format => 'json', text => data_section('main', 'token') };
+post '/oauth2/token' => { format => 'json', text => data_section('main', 'token') };
 get '/api/statuses/show.json' => sub {
 	my $c = shift;
 	my $id = $c->param('id');
@@ -83,8 +83,9 @@ if (defined $api_key and defined $api_secret) {
 	diag 'Running online test for Twitter';
 } else {
 	diag 'Running offline test for Twitter; set TWITTER_API_KEY/TWITTER_API_SECRET for online test';
-	$Mojo::WebService::Twitter::OAUTH2_ENDPOINT = '/token';
 	$Mojo::WebService::Twitter::API_BASE_URL = '/api/';
+	$Mojo::WebService::Twitter::OAUTH_BASE_URL = '/oauth/';
+	$Mojo::WebService::Twitter::OAUTH2_BASE_URL = '/oauth2/';
 	$api_key = 'foo';
 	$api_secret = 'bar';
 }
