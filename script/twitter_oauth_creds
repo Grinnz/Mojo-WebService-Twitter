@@ -20,7 +20,7 @@ print $oreq->authorize_url . "\n";
 print "Enter authorization PIN: ";
 chomp(my $pin = readline STDIN);
 
-my $oauth = $oreq->verify_authorization($pin);
+my $oauth = $twitter->verify_oauth($oreq, $pin);
 my $access_token = $oauth->access_token;
 my $access_secret = $oauth->access_secret;
 my $user = $twitter->authorization($oauth)->verify_credentials;

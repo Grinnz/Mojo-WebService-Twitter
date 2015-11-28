@@ -22,7 +22,7 @@ Mojo::WebService::Twitter - Simple Twitter API client
  
  # Some requests require user-specific authentication
  $twitter->authorization('oauth', access_token => $token, access_secret => $secret);
- my $user = $twitter->verify_credentials;
+ my $authorizing_user = $twitter->verify_credentials;
 
 =head1 DESCRIPTION
 
@@ -94,8 +94,20 @@ optional OAuth callback URL may be passed; by default, C<oob> is passed to use
 PIN-based authorization. After authorization, the user will either be
 redirected to the callback URL with the query parameter C<oauth_verifier>, or
 receive a PIN to return to the application. Either the verifier string or PIN
-should be passed to L<Mojo::WebService::Twitter::OAuthRequest/"verify_authorization">
-to retrieve a L<Mojo::WebService::Twitter::OAuth> to use for authorization.
+should be passed to L</"verify_oauth"> to retrieve a
+L<Mojo::WebService::Twitter::OAuth> to use for authorization.
+
+=head2 verify_oauth
+
+ my $oauth = $twitter->verify_oauth($oreq, $verifier);
+ $twitter->verify_authorization($oreq, $verifier, sub {
+   my ($twitter, $error, $oauth) = @_;
+ });
+
+Verify an OAuth 1.0a authorization request, represented by a
+L<Mojo::WebService::Twitter::OAuthRequest> object, with the verifier string or
+PIN from the authorizing user. Returns a L<Mojo::WebService::Twitter::OAuth>
+object to use for L</"authorization"> on behalf of the user.
 
 =head2 request_oauth2
 
@@ -105,7 +117,7 @@ to retrieve a L<Mojo::WebService::Twitter::OAuth> to use for authorization.
  });
 
 Request OAuth 2 credentials and return a L<Mojo::WebService::Twitter::OAuth2>
-object to use for authorization on behalf of the application itself.
+object to use for L</"authorization"> on behalf of the application itself.
 
 =head2 get_tweet
 

@@ -2,12 +2,10 @@ package Mojo::WebService::Twitter::OAuth2;
 use Mojo::Base -base;
 
 use Carp 'croak';
-use Mojo::WebService::Twitter;
 
 our $VERSION = '0.001';
 
 has 'bearer_token';
-has 'twitter' => sub { Mojo::WebService::Twitter->new };
 
 sub authorize_request {
 	my ($self, $tx) = @_;
@@ -37,13 +35,6 @@ authorize actions on behalf of the application itself using OAuth 2.
 =head1 ATTRIBUTES
 
 L<Mojo::WebService::Twitter::OAuth2> implements the following attributes.
-
-=head2 twitter
-
- my $twitter = $oauth2->twitter;
- $oauth2     = $oauth2->twitter(Mojo::WebService::Twitter->new);
-
-L<Mojo::WebService::Twitter> object used to make API requests.
 
 =head2 bearer_token
 

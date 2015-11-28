@@ -5,18 +5,14 @@ use Carp 'croak';
 use Digest::SHA 'hmac_sha1';
 use List::Util 'pairs';
 use Mojo::Util qw(b64_encode encode url_escape);
-use Mojo::WebService::Twitter;
-use Mojo::WebService::Twitter::User;
 
 our $VERSION = '0.001';
 
-has [qw(access_token access_secret)];
-has 'twitter' => sub { Mojo::WebService::Twitter->new };
-has 'user' => sub { Mojo::WebService::Twitter::User->new(twitter => shift->twitter) };
+has [qw(access_token access_secret api_key api_secret screen_name user_id)];
 
 sub authorize_request {
 	my ($self, $tx) = @_;
-	my ($api_key, $api_secret) = ($self->twitter->api_key, $self->twitter->api_secret);
+	my ($api_key, $api_secret) = ($self->api_key, $self->api_secret);
 	croak 'Twitter API key and secret are required' unless defined $api_key and defined $api_secret;
 	my ($token, $secret) = ($self->access_token, $self->access_secret);
 	return _authorize_oauth($tx, $api_key, $api_secret, $token, $secret);
@@ -82,7 +78,7 @@ Mojo::WebService::Twitter::OAuth - OAuth 1.0a authorization for Twitter
  $twitter->authorization->authorize_request($tx);
  
  my $oreq = $twitter->request_oauth;
- my $oauth = $oreq->verify_authorization($pin);
+ my $oauth = $twitter->verify_oauth($oreq, $pin);
  $twitter->authorization($oauth);
  
 =head1 DESCRIPTION
@@ -93,13 +89,6 @@ authorize actions on behalf of a specific user using OAuth 1.0a.
 =head1 ATTRIBUTES
 
 L<Mojo::WebService::Twitter::OAuth> implements the following attributes.
-
-=head2 twitter
-
- my $twitter = $oauth->twitter;
- $oauth      = $oauth->twitter(Mojo::WebService::Twitter->new);
-
-L<Mojo::WebService::Twitter> object used to make API requests.
 
 =head2 access_token
 
@@ -115,12 +104,31 @@ OAuth access token used to authorize API requests.
 
 OAuth access token secret used to authorize API requests.
 
-=head2 user
+=head2 api_key
 
- my $user = $oauth->user;
- $oauth   = $oauth->user($user);
+ my $api_key = $oauth->api_key;
+ $oauth      = $oauth->api_key($api_key);
 
-L<Mojo::WebService::Twitter::User> object representing authorizing user.
+API key for your L<Twitter Application|https://apps.twitter.com>.
+
+=head2 api_secret
+
+ my $api_secret = $oauth->api_secret;
+ $oauth         = $oauth->api_secret($api_secret);
+
+API secret for your L<Twitter Application|https://apps.twitter.com>.
+
+=head2 screen_name
+
+ my $screen_name = $oauth->screen_name;
+
+Screen name of authorizing user, set by L<Mojo::WebService::Twitter/"verify_oauth">.
+
+=head2 user_id
+
+ my $user_id = $oauth->user_id;
+
+ID of authorizing user, set by L<Mojo::WebService::Twitter/"verify_oauth">.
 
 =head1 METHODS
 
