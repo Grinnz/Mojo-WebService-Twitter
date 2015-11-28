@@ -75,6 +75,7 @@ sub verify_authorization {
 		});
 	} else {
 		$tx = $ua->start($tx);
+		die twitter_tx_error($tx) . "\n" if $tx->error;
 		return $self->_from_verify($tx);
 	}
 }

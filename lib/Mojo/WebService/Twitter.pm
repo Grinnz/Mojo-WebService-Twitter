@@ -124,12 +124,13 @@ sub verify_credentials {
 		$ua->start($tx, sub {
 			my ($ua, $tx) = @_;
 			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
-			my $user = Mojo::WebService::Twitter::User->new(twitter => $self->twitter)->from_source($tx->res->json);
+			my $user = Mojo::WebService::Twitter::User->new(twitter => $self)->from_source($tx->res->json);
 			$self->$cb(undef, $user);
 		});
 	} else {
 		$tx = $ua->start($tx);
-		my $user = Mojo::WebService::Twitter::User->new(twitter => $self->twitter)->from_source($tx->res->json);
+		die twitter_tx_error($tx) . "\n" if $tx->error;
+		my $user = Mojo::WebService::Twitter::User->new(twitter => $self)->from_source($tx->res->json);
 		return $user;
 	}
 }

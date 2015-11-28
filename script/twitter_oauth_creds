@@ -1,0 +1,28 @@
+#!perl
+use strict;
+use warnings;
+use Mojo::WebService::Twitter;
+
+my $twitter = Mojo::WebService::Twitter->new;
+print "Enter Twitter API key: ";
+chomp(my $api_key = readline STDIN);
+$twitter->api_key($api_key);
+print "Enter Twitter API secret: ";
+chomp(my $api_secret = readline STDIN);
+$twitter->api_secret($api_secret);
+
+$twitter->authorization('oauth');
+my $url = $twitter->authorization->get_authorize_url;
+print "Please go to the following URL to authorize this Twitter application to use your credentials.\n";
+print "$url\n";
+
+print "Enter authorization PIN: ";
+chomp(my $pin = readline STDIN);
+
+my $user = $twitter->authorization->verify_authorization($pin);
+my $access_token = $twitter->authorization->access_token;
+my $access_secret = $twitter->authorization->access_secret;
+
+print "OAuth credentials for " . $user->screen_name . ":\n";
+print "Access token: $access_token\n";
+print "Access token secret: $access_secret\n";

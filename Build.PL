@@ -99,6 +99,9 @@ EOW
         "Time::Piece" => 0,
         "perl" => "5.010001"
       },
+      "script_files" => [
+        "script/twitter_oauth_creds"
+      ],
       "test_requires" => {
         "List::Util" => "1.29",
         "Test::More" => "0.88"
