@@ -3,6 +3,8 @@ use strict;
 use warnings;
 use Mojo::WebService::Twitter;
 
+our $VERSION = '0.001';
+
 my $twitter = Mojo::WebService::Twitter->new;
 print "Enter Twitter API key: ";
 chomp(my $api_key = readline STDIN);
