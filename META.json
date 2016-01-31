@@ -4,7 +4,7 @@
       "Dan Book <dbook@cpan.org>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Dist::Zilla version 5.041, CPAN::Meta::Converter version 2.150005",
+   "generated_by" : "Dist::Zilla version 5.043, CPAN::Meta::Converter version 2.150005",
    "license" : [
       "artistic_2"
    ],
@@ -39,19 +39,18 @@
       "runtime" : {
          "requires" : {
             "Carp" : "0",
-            "Digest::SHA" : "0",
             "Exporter" : "0",
             "IO::Socket::SSL" : "1.94",
-            "List::Util" : "1.29",
             "Mojolicious" : "6.0",
             "Scalar::Util" : "0",
             "Time::Piece" : "0",
+            "WWW::OAuth" : "0",
             "perl" : "5.010001"
          }
       },
       "test" : {
          "requires" : {
-            "List::Util" : "1.29",
+            "List::Util" : "0",
             "Test::More" : "0.88"
          }
       }
@@ -63,18 +62,6 @@
       },
       "Mojo::WebService::Twitter::Error" : {
          "file" : "lib/Mojo/WebService/Twitter/Error.pm",
-         "version" : "0.001"
-      },
-      "Mojo::WebService::Twitter::OAuth" : {
-         "file" : "lib/Mojo/WebService/Twitter/OAuth.pm",
-         "version" : "0.001"
-      },
-      "Mojo::WebService::Twitter::OAuth2" : {
-         "file" : "lib/Mojo/WebService/Twitter/OAuth2.pm",
-         "version" : "0.001"
-      },
-      "Mojo::WebService::Twitter::OAuthRequest" : {
-         "file" : "lib/Mojo/WebService/Twitter/OAuthRequest.pm",
          "version" : "0.001"
       },
       "Mojo::WebService::Twitter::Tweet" : {

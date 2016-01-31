@@ -1,11 +1,10 @@
 requires 'perl' => '5.010001';
 requires 'Carp';
-requires 'Digest::SHA';
 requires 'Exporter';
 requires 'IO::Socket::SSL' => '1.94';
-requires 'List::Util' => '1.29';
 requires 'Mojolicious' => '6.0';
 requires 'Scalar::Util';
 requires 'Time::Piece';
+requires 'WWW::OAuth';
 test_requires 'List::Util';
 test_requires 'Test::More' => '0.88';

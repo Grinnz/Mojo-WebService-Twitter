@@ -1,6 +1,5 @@
 use Mojolicious::Lite;
 use Mojo::Loader 'data_section';
-use List::Util 'first';
 use Time::Piece;
 
 my %tweet_data = (
@@ -66,7 +65,7 @@ get '/api/users/show.json' => sub {
 	if ($id = $c->param('user_id')) {
 		die "Unknown user ID $id" unless exists $user_data{$id};
 	} elsif (my $name = $c->param('screen_name')) {
-		$id = first { lc $user_data{$_}{screen_name} eq lc $name } keys %user_data;
+		($id) = grep { lc $user_data{$_}{screen_name} eq lc $name } keys %user_data;
 		die "Unknown user screen name $name" unless defined $id;
 	}
 	my $data_section = $user_data{$id}{data_section} // 'user';
@@ -91,13 +90,13 @@ if (defined $api_key and defined $api_secret) {
 }
 
 my $twitter = Mojo::WebService::Twitter->new;
-$twitter->ua->server->app->log->level('fatal');
+$twitter->ua->server->app->log->level('warn');
 
 ok !eval { $twitter->get_tweet("657618739492474880"); 1 }, 'no API key set';
 is $twitter->api_key($api_key)->api_key, $api_key, 'set API key';
 is $twitter->api_secret($api_secret)->api_secret, $api_secret, 'set API secret';
 
-$twitter->authorization($twitter->request_oauth2);
+$twitter->authentication($twitter->request_oauth2);
 
 foreach my $id (keys %tweet_data) {
 	my $data = $tweet_data{$id};

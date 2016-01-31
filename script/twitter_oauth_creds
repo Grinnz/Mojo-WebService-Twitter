@@ -2,6 +2,7 @@
 use strict;
 use warnings;
 use Mojo::WebService::Twitter;
+use Mojo::WebService::Twitter::Util 'twitter_authorize_url';
 
 our $VERSION = '0.001';
 
@@ -13,18 +14,18 @@ print "Enter Twitter API secret: ";
 chomp(my $api_secret = readline STDIN);
 $twitter->api_secret($api_secret);
 
-my $oreq = $twitter->request_oauth;
+my $res = $twitter->request_oauth;
+my $request_token = $res->{oauth_token};
 print "Please go to the following URL to authorize this Twitter application to make requests on your behalf.\n";
-print $oreq->authorize_url . "\n";
+print twitter_authorize_url($request_token) . "\n";
 
 print "Enter authorization PIN: ";
 chomp(my $pin = readline STDIN);
 
-my $oauth = $twitter->verify_oauth($oreq, $pin);
-my $access_token = $oauth->access_token;
-my $access_secret = $oauth->access_secret;
-my $user = $twitter->authorization($oauth)->verify_credentials;
+$res = $twitter->verify_oauth($pin, $request_token);
+my ($access_token, $access_token_secret) = @$res{'oauth_token','oauth_token_secret'};
+my $user = $twitter->authorization('oauth', token => $access_token, token_secret => $access_token_secret)->verify_credentials;
 
 print "OAuth credentials for \@" . $user->screen_name . ":\n";
 print "Access token: $access_token\n";
-print "Access token secret: $access_secret\n";
+print "Access token secret: $access_token_secret\n";

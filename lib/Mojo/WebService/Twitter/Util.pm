@@ -3,11 +3,14 @@ package Mojo::WebService::Twitter::Util;
 use strict;
 use warnings;
 use Exporter 'import';
+use Mojo::WebService::Twitter;
 use Time::Piece ();
 
 our $VERSION = '0.001';
 
-our @EXPORT_OK = qw(parse_twitter_timestamp);
+our @EXPORT_OK = qw(twitter_authorize_url parse_twitter_timestamp);
+
+sub twitter_authorize_url { Mojo::WebService::Twitter::_oauth_url('authorize')->query(oauth_token => shift) }
 
 sub parse_twitter_timestamp { Time::Piece->strptime(shift, '%a %b %d %H:%M:%S %z %Y') }
 
@@ -30,6 +33,12 @@ L<Mojo::WebService::Twitter> for interacting with the L<Twitter|https://twitter.
 API. All functions are exportable on demand.
 
 =head1 FUNCTIONS
+
+=head2 twitter_authorize_url
+
+ my $url = twitter_authorize_url($token);
+
+Takes an OAuth 1.0 request token and returns a Twitter API authorization URL.
 
 =head2 parse_twitter_timestamp
 
