@@ -248,12 +248,12 @@ sub _oauth {
 	my $self = shift;
 	my ($api_key, $api_secret) = ($self->api_key, $self->api_secret);
 	croak 'Twitter API key and secret are required' unless defined $api_key and defined $api_secret;
-	my %args = @_;
+	my ($token, $token_secret) = @_;
 	my $oauth = WWW::OAuth->new(
 		client_id => $api_key,
 		client_secret => $api_secret,
-		token => $args{token},
-		token_secret => $args{token_secret},
+		token => $token,
+		token_secret => $token_secret,
 	);
 	return sub { $oauth->authenticate(@_) };
 }
@@ -268,8 +268,7 @@ sub _oauth2_request {
 
 sub _oauth2 {
 	my $self = shift;
-	my %args = @_;
-	my $token = $args{token} // croak 'OAuth2 access token is required';
+	my $token = shift // croak 'Access token is required for OAuth2 authentication';
 	return sub { shift->headers->authorization("Bearer $token") };
 }
 
@@ -306,7 +305,7 @@ Mojo::WebService::Twitter - Simple Twitter API client
  Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
  
  # Some requests require authentication on behalf of a user
- $twitter->authentication('oauth', token => $token, token_secret => $secret);
+ $twitter->authentication(oauth => $token, $secret);
  my $authorizing_user = $twitter->verify_credentials;
 
 =head1 DESCRIPTION
@@ -357,14 +356,14 @@ implements the following new ones.
  my $code = $twitter->authentication;
  $twitter = $twitter->authentication($code);
  $twitter = $twitter->authentication({oauth_token => $access_token, oauth_token_secret => $access_token_secret});
- $twitter = $twitter->authentication('oauth', token => $access_token, token_secret => $access_token_secret);
+ $twitter = $twitter->authentication(oauth => $access_token, $access_token_secret);
  $twitter = $twitter->authentication({access_token => $access_token});
- $twitter = $twitter->authentication('oauth2', token => $access_token);
+ $twitter = $twitter->authentication(oauth2 => $access_token);
 
 Get or set coderef used to authenticate API requests. Passing C<oauth> with
-optional C<token> and C<token_secret>, or a hashref containing C<oauth_token>
-and C<oauth_token_secret>, will set a coderef which uses a L<WWW::OAuth> to
-authenticate requests. Passing C<oauth2> with required C<token> or a hashref
+optional token and secret, or a hashref containing C<oauth_token> and
+C<oauth_token_secret>, will set a coderef which uses a L<WWW::OAuth> to
+authenticate requests. Passing C<oauth2> with required token or a hashref
 containing C<access_token> will set a coderef which authenticates using the
 passed access token. The coderef will receive the L<Mojo::Message::Request>
 object as the first parameter, and an optional hashref of C<oauth_> parameters.
