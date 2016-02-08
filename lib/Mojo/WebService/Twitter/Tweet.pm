@@ -1,28 +1,12 @@
 package Mojo::WebService::Twitter::Tweet;
 use Mojo::Base -base;
 
-use Carp 'croak';
 use Mojo::WebService::Twitter::User;
 use Mojo::WebService::Twitter::Util 'parse_twitter_timestamp';
 
 our $VERSION = '0.001';
 
-has [qw(twitter coordinates created_at favorites id retweets text)];
-has user => sub { Mojo::WebService::Twitter::User->new(twitter => shift->twitter) };
-
-sub fetch {
-	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
-	my $self = shift;
-	if ($cb) {
-		$self->twitter->get_tweet($self->id, sub {
-			my ($twitter, $err, $tweet) = @_;
-			return $self->$cb($err) if $err;
-			$self->$cb(undef, $tweet);
-		});
-	} else {
-		return $self->twitter->get_tweet($self->id);
-	}
-}
+has [qw(coordinates created_at favorites id retweets text user)];
 
 sub from_source {
 	my ($self, $source) = @_;
@@ -32,10 +16,7 @@ sub from_source {
 	$self->id($source->{id_str});
 	$self->retweets($source->{retweet_count});
 	$self->text($source->{text});
-	if (defined $source->{user}) {
-		delete $self->{user};
-		$self->user->from_source($source->{user});
-	}
+	$self->user(Mojo::WebService::Twitter::User->new->from_source($source->{user})) if defined $source->{user};
 	return $self;
 }
 
@@ -47,8 +28,9 @@ Mojo::WebService::Twitter::Tweet - A tweet
 
 =head1 SYNOPSIS
 
- use Mojo::WebService::Twitter::Tweet;
- my $tweet = Mojo::WebService::Twitter::Tweet->new(id => $tweet_id, twitter => $twitter)->fetch;
+ use Mojo::WebService::Twitter;
+ my $twitter = Mojo::WebService::Twitter->new(api_key => $api_key, api_secret => $api_secret);
+ my $tweet = $twitter->get_tweet($tweet_id);
  
  my $username = $tweet->user->screen_name;
  my $created_at = scalar localtime $tweet->created_at;
@@ -118,13 +100,6 @@ User who sent the tweet, as a L<Mojo::WebService::Twitter::User> object.
 
 L<Mojo::WebService::Twitter::Tweet> inherits all methods from L<Mojo::Base>,
 and implements the following new ones.
-
-=head2 fetch
-
- $tweet = $tweet->fetch;
-
-Fetch tweet from L</"twitter"> based on L</"id"> and return a new
-L<Mojo::WebService::Twitter::Tweet> object.
 
 =head2 from_source
 

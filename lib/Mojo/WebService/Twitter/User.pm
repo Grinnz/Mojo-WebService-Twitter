@@ -7,24 +7,8 @@ use Scalar::Util 'weaken';
 
 our $VERSION = '0.001';
 
-has [qw(twitter created_at description followers friends id
+has [qw(created_at description followers friends id last_tweet
 	name protected screen_name statuses time_zone url utc_offset verified)];
-has last_tweet => sub { Mojo::WebService::Twitter::User->new(twitter => shift->twitter) };
-
-sub fetch {
-	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
-	my $self = shift;
-	my %params = (user_id => $self->id, screen_name => $self->screen_name);
-	if ($cb) {
-		$self->twitter->get_user(%params, sub {
-			my ($twitter, $err, $user) = @_;
-			return $self->$cb($err) if $err;
-			$self->$cb(undef, $user);
-		});
-	} else {
-		return $self->twitter->get_user(%params);
-	}
-}
 
 sub from_source {
 	my ($self, $source) = @_;
@@ -42,9 +26,9 @@ sub from_source {
 	$self->utc_offset($source->{utc_offset});
 	$self->verified($source->{verified} ? 1 : 0);
 	if (defined $source->{status}) {
-		delete $self->{last_tweet};
-		my $tweet = $self->last_tweet->from_source($source->{status});
+		my $tweet = Mojo::WebService::Twitter::Tweet->new->from_source($source->{status});
 		weaken($tweet->{user} = $self);
+		$self->last_tweet($tweet);
 	}
 	return $self;
 }
@@ -57,8 +41,9 @@ Mojo::WebService::Twitter::User - A Twitter user
 
 =head1 SYNOPSIS
 
- use Mojo::WebService::Twitter::User;
- my $user = Mojo::WebService::Twitter::User->new(id => $user_id, twitter => $twitter)->fetch;
+ use Mojo::WebService::Twitter;
+ my $twitter = Mojo::WebService::Twitter->new(api_key => $api_key, api_secret => $api_secret);
+ my $user = $twitter->get_user(user_id => $user_id);
  
  my $username = $user->screen_name;
  my $name = $user->name;
@@ -170,13 +155,6 @@ Whether the user is a L<Verified Account|https://twitter.com/help/verified>.
 
 L<Mojo::WebService::Twitter::User> inherits all methods from L<Mojo::Base>, and
 implements the following new ones.
-
-=head2 fetch
-
- $user = $user->fetch;
-
-Fetch user from L</"twitter"> based on L</"id"> or L</"screen_name"> and return
-a new L<Mojo::WebService::Twitter::User> object.
 
 =head2 from_source
 
