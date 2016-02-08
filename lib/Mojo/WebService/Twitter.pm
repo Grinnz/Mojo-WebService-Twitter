@@ -144,7 +144,8 @@ sub _from_oauth2_request {
 sub get_tweet {
 	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
 	my ($self, $id) = @_;
-	croak 'Tweet id is required for get_tweet' unless defined $id;
+	croak 'Tweet ID is required for get_tweet' unless defined $id;
+	croak 'Invalid tweet ID to retrieve' unless $id =~ m/\A[0-9]+\z/;
 	my $ua = $self->ua;
 	my $tx = $ua->build_tx(GET => _api_url('statuses/show.json')->query(id => $id));
 	$self->authentication->($tx->req);
@@ -181,6 +182,54 @@ sub get_user {
 		$tx = $ua->start($tx);
 		die twitter_tx_error($tx) . "\n" if $tx->error;
 		return $self->_user_object($tx->res->json);
+	}
+}
+
+sub post_tweet {
+	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
+	my ($self, $status, %params) = @_;
+	croak 'Status text is required to post a tweet' unless defined $status;
+	my %form;
+	$form{status} = $status;
+	$form{$_} = $params{$_} for grep { defined $params{$_} }
+		qw(in_reply_to_status_id lat long place_id);
+	$form{$_} = $params{$_} ? 'true' : 'false' for grep { defined $params{$_} }
+		qw(display_coordinates);
+	my $ua = $self->ua;
+	my $tx = $ua->build_tx(POST => _api_url('statuses/update.json'), form => \%form);
+	$self->authentication->($tx->req);
+	if ($cb) {
+		$ua->start($tx, sub {
+			my ($ua, $tx) = @_;
+			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
+			$self->$cb(undef, $self->_tweet_object($tx->res->json));
+		});
+	} else {
+		$tx = $ua->start($tx);
+		die twitter_tx_error($tx) . "\n" if $tx->error;
+		return $self->_tweet_object($tx->res->json);
+	}
+}
+
+sub retweet {
+	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
+	my ($self, $id) = @_;
+	croak 'Tweet ID is required for retweet' unless defined $id;
+	$id = $id->id if blessed $id and $id->isa('Mojo::WebService::Twitter::Tweet');
+	croak 'Invalid tweet ID to retweet' unless $id =~ m/\A[0-9]+\z/;
+	my $ua = $self->ua;
+	my $tx = $ua->build_tx(POST => _api_url("statuses/retweet/$id.json"));
+	$self->authentication->($tx->req);
+	if ($cb) {
+		$ua->start($tx, sub {
+			my ($ua, $tx) = @_;
+			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
+			$self->$cb(undef, $self->_tweet_object($tx->res->json));
+		});
+	} else {
+		$tx = $ua->start($tx);
+		die twitter_tx_error($tx) . "\n" if $tx->error;
+		return $self->_tweet_object($tx->res->json);
 	}
 }
 
@@ -291,13 +340,15 @@ Mojo::WebService::Twitter - Simple Twitter API client
 =head1 SYNOPSIS
 
  my $twitter = Mojo::WebService::Twitter->new(api_key => $api_key, api_secret => $api_secret);
+ 
+ # Request and store access token
  $twitter->authentication($twitter->request_oauth2);
  
- # Blocking
+ # Blocking API request
  my $user = $twitter->get_user(screen_name => $name);
  say $user->screen_name . ' was created on ' . $user->created_at->ymd;
  
- # Non-blocking
+ # Non-blocking API request
  $twitter->get_tweet($tweet_id, sub {
    my ($twitter, $err, $tweet) = @_;
    say $err ? "Error: $err" : 'Tweet: ' . $tweet->text;
@@ -307,6 +358,8 @@ Mojo::WebService::Twitter - Simple Twitter API client
  # Some requests require authentication on behalf of a user
  $twitter->authentication(oauth => $token, $secret);
  my $authorizing_user = $twitter->verify_credentials;
+ 
+ my $new_tweet = $twitter->post_tweet('Something new and exciting!');
 
 =head1 DESCRIPTION
 
@@ -319,6 +372,13 @@ API requests are authenticated by the L</"authentication"> coderef, which can
 either use an OAuth 2.0 access token to authenticate requests on behalf of the
 application itself, or OAuth 1.0 credentials to authenticate requests on behalf
 of a specific user.
+
+All methods which query the Twitter API can be called with an optional trailing
+callback argument to run a non-blocking API query. On transport, HTTP, or API
+error, blocking API queries will throw a L<Mojo::WebService::Twitter::Error>
+exception, while non-blocking API queries will pass the exception object to the
+callback. Consider organizing complex sequences of non-blocking queries with
+L<Mojo::IOLoop/"delay">.
 
 =head1 ATTRIBUTES
 
@@ -431,6 +491,72 @@ Retrieve a L<Mojo::WebService::Twitter::Tweet> by tweet ID.
 
 Retrieve a L<Mojo::WebService::Twitter::User> by user ID or screen name.
 
+=head2 post_tweet
+
+ my $tweet = $twitter->post_tweet($text, %options);
+ $twitter->post_tweet($text, %options, sub {
+ 	my ($twitter, $err, $tweet) = @_;
+ });
+
+Post a status update (tweet) and retrieve the resulting
+L<Mojo::WebService::Twitter::Tweet>. Requires OAuth 1.0 authentication. Accepts
+the following options:
+
+=over
+
+=item in_reply_to_status_id
+
+ in_reply_to_status_id => '12345'
+
+Indicates the tweet is in reply to an existing tweet ID. IDs should be
+specified as a string to avoid issues with large integers. This parameter will
+be ignored by the Twitter API unless the author of the referenced tweet is
+mentioned within the status text as C<@username>.
+
+=item lat
+
+ lat => '37.781157'
+
+The latitude of the location to attach to the tweet. This parameter will be
+ignored by the Twitter API unless it is within the range C<-90.0> to C<90.0>,
+and a corresponding C<long> is specified. It is recommended to specify values
+as strings to avoid issues with floating-point representations.
+
+=item long
+
+ long => '-122.398720'
+
+The longitude of the location to attach to the tweet. This parameter will be
+ignored by the Twitter API unless it is within the range C<-180.0> to C<180.0>,
+and a corresponding C<lat> is specified. It is recommended to specify values as
+strings to avoid issues with floating-point representations.
+
+=item place_id
+
+ place_id => 'df51dec6f4ee2b2c'
+
+A Twitter L<place ID|https://dev.twitter.com/overview/api/places> to attach to
+the tweet.
+
+=item display_coordinates
+
+ display_coordinates => 1
+
+If true, tweet will display the exact coordinates the tweet was sent from.
+
+=back
+
+=head2 retweet
+
+ my $tweet = $twitter->retweet($tweet_id);
+ $twitter->retweet($tweet_id, sub {
+   my ($twitter, $err, $tweet) = @_;
+ });
+
+Retweet the tweet ID or L<Mojo::WebService::Twitter::Tweet> object. Returns a
+L<Mojo::WebService::Twitter::Tweet> representing the original tweet. Requires
+OAuth 1.0 authentication.
+
 =head2 search_tweets
 
  my $tweets = $twitter->search_tweets($query);
@@ -451,7 +577,8 @@ objects. Accepts the following options:
  geocode => {latitude => '37.781157', longitude => '-122.398720', radius => '1mi'}
 
 Restricts tweets to the given radius of the given latitude/longitude. Radius
-must be specified as C<mi> (miles) or C<km> (kilometers).
+must be specified as C<mi> (miles) or C<km> (kilometers). It is recommended to
+specify values as strings to avoid issues with floating-point representations.
 
 =item lang
 

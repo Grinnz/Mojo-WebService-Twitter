@@ -1,6 +1,7 @@
 package Mojo::WebService::Twitter::Tweet;
 use Mojo::Base -base;
 
+use Carp 'croak';
 use Mojo::WebService::Twitter::User;
 use Mojo::WebService::Twitter::Util 'parse_twitter_timestamp';
 
