@@ -148,12 +148,12 @@ sub get_tweet {
 		$ua->start($tx, sub {
 			my ($ua, $tx) = @_;
 			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
-			$self->$cb(undef, $self->_tweet_object($tx->res->json));
+			$self->$cb(undef, _tweet_object($tx->res->json));
 		});
 	} else {
 		$tx = $ua->start($tx);
 		die twitter_tx_error($tx) . "\n" if $tx->error;
-		return $self->_tweet_object($tx->res->json);
+		return _tweet_object($tx->res->json);
 	}
 }
 
@@ -171,12 +171,12 @@ sub get_user {
 		$ua->start($tx, sub {
 			my ($ua, $tx) = @_;
 			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
-			$self->$cb(undef, $self->_user_object($tx->res->json));
+			$self->$cb(undef, _user_object($tx->res->json));
 		});
 	} else {
 		$tx = $ua->start($tx);
 		die twitter_tx_error($tx) . "\n" if $tx->error;
-		return $self->_user_object($tx->res->json);
+		return _user_object($tx->res->json);
 	}
 }
 
@@ -197,12 +197,12 @@ sub post_tweet {
 		$ua->start($tx, sub {
 			my ($ua, $tx) = @_;
 			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
-			$self->$cb(undef, $self->_tweet_object($tx->res->json));
+			$self->$cb(undef, _tweet_object($tx->res->json));
 		});
 	} else {
 		$tx = $ua->start($tx);
 		die twitter_tx_error($tx) . "\n" if $tx->error;
-		return $self->_tweet_object($tx->res->json);
+		return _tweet_object($tx->res->json);
 	}
 }
 
@@ -219,12 +219,12 @@ sub retweet {
 		$ua->start($tx, sub {
 			my ($ua, $tx) = @_;
 			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
-			$self->$cb(undef, $self->_tweet_object($tx->res->json));
+			$self->$cb(undef, _tweet_object($tx->res->json));
 		});
 	} else {
 		$tx = $ua->start($tx);
 		die twitter_tx_error($tx) . "\n" if $tx->error;
-		return $self->_tweet_object($tx->res->json);
+		return _tweet_object($tx->res->json);
 	}
 }
 
@@ -250,12 +250,12 @@ sub search_tweets {
 		$ua->start($tx, sub {
 			my ($ua, $tx) = @_;
 			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
-			$self->$cb(undef, Mojo::Collection->new(@{$tx->res->json->{statuses} // []}));
+			$self->$cb(undef, Mojo::Collection->new(map { _tweet_object($_) } @{$tx->res->json->{statuses} // []}));
 		});
 	} else {
 		$tx = $ua->start($tx);
 		die twitter_tx_error($tx) . "\n" if $tx->error;
-		return Mojo::Collection->new(@{$tx->res->json->{statuses} // []});
+		return Mojo::Collection->new(map { _tweet_object($_) } @{$tx->res->json->{statuses} // []});
 	}
 }
 
@@ -314,15 +314,9 @@ sub _oauth2 {
 	return sub { shift->headers->authorization("Bearer $token") };
 }
 
-sub _tweet_object {
-	my ($self, $source) = @_;
-	return Mojo::WebService::Twitter::Tweet->new(twitter => $self)->from_source($source);
-}
+sub _tweet_object { Mojo::WebService::Twitter::Tweet->new->from_source(shift) }
 
-sub _user_object {
-	my ($self, $source) = @_;
-	return Mojo::WebService::Twitter::User->new(twitter => $self)->from_source($source);
-}
+sub _user_object { Mojo::WebService::Twitter::User->new->from_source(shift) }
 
 1;
 
