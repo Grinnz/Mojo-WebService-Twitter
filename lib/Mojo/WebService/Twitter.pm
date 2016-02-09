@@ -357,8 +357,13 @@ L<Twitter Application|https://apps.twitter.com> are required.
 
 API requests are authenticated by the L</"authentication"> coderef, which can
 either use an OAuth 2.0 access token to authenticate requests on behalf of the
-application itself, or OAuth 1.0 credentials to authenticate requests on behalf
-of a specific user.
+application itself, or OAuth 1.0 credentials (access token and secret) to
+authenticate requests on behalf of a specific user. The L<twitter_oauth_creds>
+script can be used to obtain Twitter OAuth credentials for a user from the
+command-line. A web application may wish to implement its own OAuth
+authorization flow, passing a callback URL back to the application in
+L</"request_oauth">, then calling L</"verify_oauth"> with the passed verifier
+code to retrieve the credentials.
 
 All methods which query the Twitter API can be called with an optional trailing
 callback argument to run a non-blocking API query. On transport, HTTP, or API
