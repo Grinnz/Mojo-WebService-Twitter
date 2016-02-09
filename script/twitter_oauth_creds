@@ -19,7 +19,7 @@ unless (defined $api_key and defined $api_secret) {
 $twitter->api_key($api_key);
 $twitter->api_secret($api_secret);
 
-my $res = $twitter->request_oauth;
+my $res = $twitter->request_oauth('oob');
 my $request_token = $res->{oauth_token};
 print "Please go to the following URL to authorize this Twitter application to make requests on your behalf.\n";
 print twitter_authorize_url($request_token) . "\n";
@@ -47,7 +47,8 @@ application
 =head1 DESCRIPTION
 
 L<twitter_oauth_creds> is an interactive script for retrieving OAuth 1.0
-credentials to authorize a Twitter application to act on behalf of a user.
+credentials to authorize a Twitter application to act on behalf of a user. It
+implements Twitter's L<PIN-based authorization flow|https://dev.twitter.com/oauth/pin-based>.
 
 The script will first prompt for your application's Twitter API key and secret,
 which you can obtain L<here|https://apps.twitter.com>. The API key and secret
