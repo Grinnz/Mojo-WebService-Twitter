@@ -46,11 +46,11 @@ my $access_token;
 my $access_secret;
 
 my $test_online = 0;
-if ($ENV{AUTHOR_TESTING} and defined $api_key and defined $api_secret) {
+if ($ENV{TWITTER_API_POST} and defined $api_key and defined $api_secret) {
 	diag 'Running online test for Twitter';
 	$test_online = 1;
 } else {
-	diag 'Running offline test for Twitter; set AUTHOR_TESTING and TWITTER_API_KEY/TWITTER_API_SECRET for online test';
+	diag 'Running offline test for Twitter; set TWITTER_API_POST and TWITTER_API_KEY/TWITTER_API_SECRET for online test';
 	$Mojo::WebService::Twitter::Util::API_BASE_URL = '/api/';
 	$Mojo::WebService::Twitter::Util::OAUTH_BASE_URL = '/oauth/';
 	$Mojo::WebService::Twitter::Util::OAUTH2_BASE_URL = '/oauth2/';
