@@ -38,7 +38,7 @@ Mojo::WebService::Twitter::Tweet - A tweet
  my $tweet = $twitter->get_tweet($tweet_id);
  
  my $username = $tweet->user->screen_name;
- my $created_at = scalar localtime $tweet->created_at;
+ my $created_at = $tweet->created_at;
  my $text = $tweet->text;
  say "[$created_at] \@$username: $text";
 
@@ -67,7 +67,7 @@ C<undef> if tweet does not have coordinates.
 
  my $ts = $tweet->created_at;
 
-<Time::Piece> object representing the creation time of the tweet in UTC.
+L<Time::Piece> object representing the creation time of the tweet in UTC.
 
 =head2 favorites
 

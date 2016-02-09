@@ -58,23 +58,23 @@
    "provides" : {
       "Mojo::WebService::Twitter" : {
          "file" : "lib/Mojo/WebService/Twitter.pm",
-         "version" : "0.001"
+         "version" : "0.002"
       },
       "Mojo::WebService::Twitter::Error" : {
          "file" : "lib/Mojo/WebService/Twitter/Error.pm",
-         "version" : "0.001"
+         "version" : "0.002"
       },
       "Mojo::WebService::Twitter::Tweet" : {
          "file" : "lib/Mojo/WebService/Twitter/Tweet.pm",
-         "version" : "0.001"
+         "version" : "0.002"
       },
       "Mojo::WebService::Twitter::User" : {
          "file" : "lib/Mojo/WebService/Twitter/User.pm",
-         "version" : "0.001"
+         "version" : "0.002"
       },
       "Mojo::WebService::Twitter::Util" : {
          "file" : "lib/Mojo/WebService/Twitter/Util.pm",
-         "version" : "0.001"
+         "version" : "0.002"
       }
    },
    "release_status" : "stable",
@@ -89,7 +89,7 @@
          "web" : "https://github.com/Grinnz/Mojo-WebService-Twitter"
       }
    },
-   "version" : "0.001",
+   "version" : "0.002",
    "x_contributors" : [
       "Dan Book <grinnz@grinnz.com>"
    ]

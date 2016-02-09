@@ -48,7 +48,7 @@ Mojo::WebService::Twitter::User - A Twitter user
  
  my $username = $user->screen_name;
  my $name = $user->name;
- my $created_at = scalar localtime $user->created_at;
+ my $created_at = $user->created_at;
  my $description = $user->description;
  say "[$created_at] \@$username ($user): $description";
 
