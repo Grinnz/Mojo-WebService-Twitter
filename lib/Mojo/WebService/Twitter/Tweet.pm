@@ -6,7 +6,8 @@ use Mojo::WebService::Twitter::Util 'parse_twitter_timestamp';
 
 our $VERSION = '0.001';
 
-has [qw(coordinates created_at favorites id retweets text user)];
+has [qw(source coordinates created_at favorites id in_reply_to_screen_name
+	in_reply_to_status_id in_reply_to_user_id retweets text user)];
 
 sub from_source {
 	my ($self, $source) = @_;
@@ -14,9 +15,13 @@ sub from_source {
 	$self->created_at(parse_twitter_timestamp($source->{created_at})) if defined $source->{created_at};
 	$self->favorites($source->{favorite_count});
 	$self->id($source->{id_str});
+	$self->in_reply_to_screen_name($source->{in_reply_to_screen_name}) if defined $source->{in_reply_to_screen_name};
+	$self->in_reply_to_status_id($source->{in_reply_to_status_id_str}) if defined $source->{in_reply_to_status_id_str};
+	$self->in_reply_to_user_id($source->{in_reply_to_user_id_str}) if defined $source->{in_reply_to_user_id_str};
 	$self->retweets($source->{retweet_count});
 	$self->text($source->{text});
 	$self->user(Mojo::WebService::Twitter::User->new->from_source($source->{user})) if defined $source->{user};
+	$self->source($source);
 	return $self;
 }
 
@@ -45,12 +50,11 @@ for more information.
 
 =head1 ATTRIBUTES
 
-=head2 twitter
+=head2 source
 
- my $twitter = $tweet->twitter;
- $tweet      = $tweet->twitter(Mojo::WebService::Twitter->new);
+ my $href = $tweet->source;
 
-L<Mojo::WebService::Twitter> object used to make API requests.
+Source data hashref from Twitter API.
 
 =head2 coordinates
 
@@ -77,6 +81,26 @@ Number of times the tweet has been favorited.
 
 Tweet identifier. Note that tweet IDs are usually too large to be represented
 as a number, so should always be treated as a string.
+
+=head2 in_reply_to_screen_name
+
+ my $screen_name = $tweet->in_reply_to_screen_name;
+
+Screen name of user whom tweet was in reply to, or C<undef> if tweet was not a
+reply.
+
+=head2 in_reply_to_status_id
+
+ my $tweet_id = $tweet->in_reply_to_status_id;
+
+Tweet ID which tweet was in reply to, or C<undef> if tweet was not a reply.
+
+=head2 in_reply_to_user_id
+
+ my $user_id = $tweet->in_reply_to_user_id;
+
+User ID of user whom tweet was in reply to, or C<undef> if tweet was not a
+reply.
 
 =head2 retweets
 

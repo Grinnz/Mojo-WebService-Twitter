@@ -15,6 +15,9 @@ my %tweet_data = (
 		coordinates => undef,
 		created_at => scalar gmtime(1445620699),
 		favorites => 382,
+		in_reply_to_screen_name => undef,
+		in_reply_to_status_id => undef,
+		in_reply_to_user_id => undef,
 		retweets => 289,
 		text => q{The @Space_Station crew works  ~9.5 hours a day, with ~4 hours free time during the week... https://t.co/2cdarZPqND https://t.co/HlAnj3eTKk},
 		user_id => '1451773004',
@@ -24,6 +27,9 @@ my %tweet_data = (
 		coordinates => undef,
 		created_at => scalar gmtime(1445553415),
 		favorites => 21,
+		in_reply_to_screen_name => 'starlingLX',
+		in_reply_to_status_id => '657257155855294465',
+		in_reply_to_user_id => '348968125',
 		retweets => 13,
 		text => q{@starlingLX @bnjacobs @StationCDRKelly @Flickr The higher-res is added but doesn't have @StationCDRKelly's edits...https://t.co/wnKeCAdLfg},
 		user_id => '1451773004',
@@ -33,6 +39,9 @@ my %tweet_data = (
 		coordinates => undef,
 		created_at => scalar gmtime(1445625604),
 		favorites => 0,
+		in_reply_to_screen_name => undef,
+		in_reply_to_status_id => undef,
+		in_reply_to_user_id => undef,
 		retweets => 35897,
 		text => q{RT @StationCDRKelly: Hurricane #Patricia looks menacing from @space_station. Stay safe below, #Mexico. #YearInSpace https://t.co/6LP2xCYcGD},
 		user_id => '1451773004',
@@ -127,6 +136,9 @@ foreach my $id (keys %tweet_data) {
 	is_deeply $tweet->coordinates, $data->{coordinates}, 'right coordinates';
 	is $tweet->created_at, $data->{created_at}, 'right creation timestamp';
 	ok $tweet->favorites >= $data->{favorites}, "at least $data->{favorites} favorites";
+	is $tweet->in_reply_to_screen_name, $data->{in_reply_to_screen_name}, 'right in-reply-to screen name';
+	is $tweet->in_reply_to_status_id, $data->{in_reply_to_status_id}, 'right in-reply-to status ID';
+	is $tweet->in_reply_to_user_id, $data->{in_reply_to_user_id}, 'right in-reply-to user ID';
 	ok $tweet->retweets >= $data->{retweets}, "at least $data->{retweets} retweets";
 	is $tweet->text, $data->{text}, 'right text';
 	is $tweet->user->id, $data->{user_id}, 'right user';

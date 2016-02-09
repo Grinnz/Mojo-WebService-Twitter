@@ -7,8 +7,8 @@ use Scalar::Util 'weaken';
 
 our $VERSION = '0.001';
 
-has [qw(created_at description followers friends id last_tweet
-	name protected screen_name statuses time_zone url utc_offset verified)];
+has [qw(source created_at description followers friends id last_tweet name
+	protected screen_name statuses time_zone url utc_offset verified)];
 
 sub from_source {
 	my ($self, $source) = @_;
@@ -30,6 +30,7 @@ sub from_source {
 		weaken($tweet->{user} = $self);
 		$self->last_tweet($tweet);
 	}
+	$self->source($source);
 	return $self;
 }
 
@@ -59,12 +60,11 @@ for more information.
 
 =head1 ATTRIBUTES
 
-=head2 twitter
+=head2 source
 
- my $twitter = $user->twitter;
- $user       = $user->twitter(Mojo::WebService::Twitter->new);
+ my $href = $user->source;
 
-L<Mojo::WebService::Twitter> object used to make API requests.
+Source data hashref from Twitter API.
 
 =head2 created_at
 
