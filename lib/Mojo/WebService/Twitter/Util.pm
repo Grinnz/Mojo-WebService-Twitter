@@ -3,7 +3,7 @@ package Mojo::WebService::Twitter::Util;
 use strict;
 use warnings;
 use Exporter 'import';
-use Mojo::WebService::Twitter;
+use Mojo::WebService::Twitter ();
 use Time::Piece ();
 
 our $VERSION = '0.001';

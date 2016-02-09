@@ -86,8 +86,7 @@ sub verify_oauth {
 	
 	my $ua = $self->ua;
 	my $tx = $ua->build_tx(POST => _oauth_url('access_token'));
-	$self->_oauth(token => $request_token, token_secret => $request_token_secret)
-		->($tx->req, { oauth_verifier => $verifier });
+	$self->_oauth($request_token, $request_token_secret)->($tx->req, { oauth_verifier => $verifier });
 	
 	if ($cb) {
 		$ua->start($tx, sub {

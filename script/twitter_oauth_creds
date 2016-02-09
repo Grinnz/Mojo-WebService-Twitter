@@ -24,7 +24,7 @@ chomp(my $pin = readline STDIN);
 
 $res = $twitter->verify_oauth($pin, $request_token);
 my ($access_token, $access_token_secret) = @$res{'oauth_token','oauth_token_secret'};
-my $user = $twitter->authorization('oauth', token => $access_token, token_secret => $access_token_secret)->verify_credentials;
+my $user = $twitter->authentication(oauth => $access_token, $access_token_secret)->verify_credentials;
 
 print "OAuth credentials for \@" . $user->screen_name . ":\n";
 print "Access token: $access_token\n";

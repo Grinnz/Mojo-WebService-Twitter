@@ -1,6 +1,13 @@
 use Mojolicious::Lite;
 use Mojo::Loader 'data_section';
 use Time::Piece;
+use Test::More;
+use Mojo::WebService::Twitter;
+use Mojo::Util 'b64_encode';
+
+use constant TEST_API_KEY => 'testapikey';
+use constant TEST_API_SECRET => 'testapisecret';
+use constant TEST_ACCESS_TOKEN => 'testaccesstoken';
 
 my %tweet_data = (
 	'657606994744860672' => {
@@ -51,29 +58,40 @@ my %user_data = (
 	},
 );
 
-post '/oauth2/token' => { format => 'json', text => data_section('main', 'token') };
-get '/api/statuses/show.json' => sub {
+post '/oauth2/token' => sub {
 	my $c = shift;
-	my $id = $c->param('id');
-	die "Unknown tweet ID $id" unless defined $id and exists $tweet_data{$id};
-	my $data_section = $tweet_data{$id}{data_section} // 'tweet';
-	$c->render(format => 'json', text => data_section('main', $data_section));
+	my $auth_header = $c->req->headers->authorization;
+	my $token = b64_encode(TEST_API_KEY . ':' . TEST_API_SECRET, '');
+	is $auth_header, "Basic $token", 'received API key and secret';
+	$c->render(format => 'json', text => '{"token_type":"bearer","access_token":"'.TEST_ACCESS_TOKEN.'"}');
 };
-get '/api/users/show.json' => sub {
-	my $c = shift;
-	my $id;
-	if ($id = $c->param('user_id')) {
-		die "Unknown user ID $id" unless exists $user_data{$id};
-	} elsif (my $name = $c->param('screen_name')) {
-		($id) = grep { lc $user_data{$_}{screen_name} eq lc $name } keys %user_data;
-		die "Unknown user screen name $name" unless defined $id;
-	}
-	my $data_section = $user_data{$id}{data_section} // 'user';
-	$c->render(format => 'json', text => data_section('main', $data_section));
+group {
+	under '/api' => sub {
+		my $c = shift;
+		my $auth_header = $c->req->headers->authorization;
+		is $auth_header, 'Bearer '.TEST_ACCESS_TOKEN, 'received access token';
+		return 1;
+	};
+	get '/statuses/show.json' => sub {
+		my $c = shift;
+		my $id = $c->param('id');
+		die "Unknown tweet ID $id" unless defined $id and exists $tweet_data{$id};
+		my $data_section = $tweet_data{$id}{data_section} // 'tweet';
+		$c->render(format => 'json', text => data_section('main', $data_section));
+	};
+	get '/users/show.json' => sub {
+		my $c = shift;
+		my $id;
+		if ($id = $c->param('user_id')) {
+			die "Unknown user ID $id" unless exists $user_data{$id};
+		} elsif (my $name = $c->param('screen_name')) {
+			($id) = grep { lc $user_data{$_}{screen_name} eq lc $name } keys %user_data;
+			die "Unknown user screen name $name" unless defined $id;
+		}
+		my $data_section = $user_data{$id}{data_section} // 'user';
+		$c->render(format => 'json', text => data_section('main', $data_section));
+	};
 };
-
-use Test::More;
-use Mojo::WebService::Twitter;
 
 my $api_key = $ENV{TWITTER_API_KEY};
 my $api_secret = $ENV{TWITTER_API_SECRET};
@@ -85,8 +103,8 @@ if (defined $api_key and defined $api_secret) {
 	$Mojo::WebService::Twitter::API_BASE_URL = '/api/';
 	$Mojo::WebService::Twitter::OAUTH_BASE_URL = '/oauth/';
 	$Mojo::WebService::Twitter::OAUTH2_BASE_URL = '/oauth2/';
-	$api_key = 'foo';
-	$api_secret = 'bar';
+	$api_key = TEST_API_KEY;
+	$api_secret = TEST_API_SECRET;
 }
 
 my $twitter = Mojo::WebService::Twitter->new;
@@ -96,7 +114,10 @@ ok !eval { $twitter->get_tweet("657618739492474880"); 1 }, 'no API key set';
 is $twitter->api_key($api_key)->api_key, $api_key, 'set API key';
 is $twitter->api_secret($api_secret)->api_secret, $api_secret, 'set API secret';
 
-$twitter->authentication($twitter->request_oauth2);
+my $access;
+ok(eval { $access = $twitter->request_oauth2; 1 }, 'requested OAuth 2 access token') or diag $@;
+ok defined($access->{access_token}), 'received access token';
+$twitter->authentication(oauth2 => $access->{access_token});
 
 foreach my $id (keys %tweet_data) {
 	my $data = $tweet_data{$id};
@@ -140,9 +161,6 @@ foreach my $id (keys %user_data) {
 done_testing;
 
 __DATA__
-
-@@ token
-{"token_type":"bearer","access_token":"thisisafakeaccesstoken"}
 
 @@ user
 {"id":1451773004,"id_str":"1451773004","name":"Intl. Space Station","screen_name":"Space_Station","location":"Low Earth Orbit","profile_location":null,"description":"NASA's page for updates from the International Space Station, the world-class lab orbiting Earth 250 miles above. For the latest research, follow @ISS_Research.","url":"http:\/\/t.co\/9Gk2GZYDsP","entities":{"url":{"urls":[{"url":"http:\/\/t.co\/9Gk2GZYDsP","expanded_url":"http:\/\/www.nasa.gov\/station","display_url":"nasa.gov\/station","indices":[0,22]}]},"description":{"urls":[]}},"protected":false,"followers_count":314219,"friends_count":230,"listed_count":3711,"created_at":"Thu May 23 15:25:28 +0000 2013","favourites_count":1233,"utc_offset":-18000,"time_zone":"Central Time (US & Canada)","geo_enabled":false,"verified":true,"statuses_count":3228,"lang":"en","status":{"created_at":"Fri Oct 23 18:40:04 +0000 2015","id":657627567948587008,"id_str":"657627567948587008","text":"RT @StationCDRKelly: Hurricane #Patricia looks menacing from @space_station. Stay safe below, #Mexico. #YearInSpace https:\/\/t.co\/6LP2xCYcGD","source":"\u003ca href=\"http:\/\/twitter.com\/download\/iphone\" rel=\"nofollow\"\u003eTwitter for iPhone\u003c\/a\u003e","truncated":false,"in_reply_to_status_id":null,"in_reply_to_status_id_str":null,"in_reply_to_user_id":null,"in_reply_to_user_id_str":null,"in_reply_to_screen_name":null,"geo":null,"coordinates":null,"place":null,"contributors":null,"retweeted_status":{"created_at":"Fri Oct 23 18:05:00 +0000 2015","id":657618739492474880,"id_str":"657618739492474880","text":"Hurricane #Patricia looks menacing from @space_station. Stay safe below, #Mexico. #YearInSpace https:\/\/t.co\/6LP2xCYcGD","source":"\u003ca href=\"http:\/\/twitter.com\" rel=\"nofollow\"\u003eTwitter Web Client\u003c\/a\u003e","truncated":false,"in_reply_to_status_id":null,"in_reply_to_status_id_str":null,"in_reply_to_user_id":null,"in_reply_to_user_id_str":null,"in_reply_to_screen_name":null,"geo":null,"coordinates":null,"place":null,"contributors":null,"retweet_count":35624,"favorite_count":22474,"entities":{"hashtags":[{"text":"Patricia","indices":[10,19]},{"text":"Mexico","indices":[73,80]},{"text":"YearInSpace","indices":[82,94]}],"symbols":[],"user_mentions":[{"screen_name":"Space_Station","name":"Intl. Space Station","id":1451773004,"id_str":"1451773004","indices":[40,54]}],"urls":[],"media":[{"id":657618738447958017,"id_str":"657618738447958017","indices":[95,118],"media_url":"http:\/\/pbs.twimg.com\/media\/CSBUwibUwAEg0fF.jpg","media_url_https":"https:\/\/pbs.twimg.com\/media\/CSBUwibUwAEg0fF.jpg","url":"https:\/\/t.co\/6LP2xCYcGD","display_url":"pic.twitter.com\/6LP2xCYcGD","expanded_url":"http:\/\/twitter.com\/StationCDRKelly\/status\/657618739492474880\/photo\/1","type":"photo","sizes":{"medium":{"w":600,"h":399,"resize":"fit"},"small":{"w":340,"h":226,"resize":"fit"},"thumb":{"w":150,"h":150,"resize":"crop"},"large":{"w":1024,"h":681,"resize":"fit"}}}]},"favorited":false,"retweeted":false,"possibly_sensitive":false,"lang":"en"},"retweet_count":35624,"favorite_count":0,"entities":{"hashtags":[{"text":"Patricia","indices":[31,40]},{"text":"Mexico","indices":[94,101]},{"text":"YearInSpace","indices":[103,115]}],"symbols":[],"user_mentions":[{"screen_name":"StationCDRKelly","name":"Scott Kelly","id":65647594,"id_str":"65647594","indices":[3,19]},{"screen_name":"Space_Station","name":"Intl. Space Station","id":1451773004,"id_str":"1451773004","indices":[61,75]}],"urls":[],"media":[{"id":657618738447958017,"id_str":"657618738447958017","indices":[116,139],"media_url":"http:\/\/pbs.twimg.com\/media\/CSBUwibUwAEg0fF.jpg","media_url_https":"https:\/\/pbs.twimg.com\/media\/CSBUwibUwAEg0fF.jpg","url":"https:\/\/t.co\/6LP2xCYcGD","display_url":"pic.twitter.com\/6LP2xCYcGD","expanded_url":"http:\/\/twitter.com\/StationCDRKelly\/status\/657618739492474880\/photo\/1","type":"photo","sizes":{"medium":{"w":600,"h":399,"resize":"fit"},"small":{"w":340,"h":226,"resize":"fit"},"thumb":{"w":150,"h":150,"resize":"crop"},"large":{"w":1024,"h":681,"resize":"fit"}},"source_status_id":657618739492474880,"source_status_id_str":"657618739492474880","source_user_id":65647594,"source_user_id_str":"65647594"}]},"favorited":false,"retweeted":false,"possibly_sensitive":false,"lang":"en"},"contributors_enabled":false,"is_translator":false,"is_translation_enabled":false,"profile_background_color":"C0DEED","profile_background_image_url":"http:\/\/pbs.twimg.com\/profile_background_images\/517439388741931008\/iRbQw1ch.jpeg","profile_background_image_url_https":"https:\/\/pbs.twimg.com\/profile_background_images\/517439388741931008\/iRbQw1ch.jpeg","profile_background_tile":false,"profile_image_url":"http:\/\/pbs.twimg.com\/profile_images\/647082562125459456\/pmT48eHQ_normal.jpg","profile_image_url_https":"https:\/\/pbs.twimg.com\/profile_images\/647082562125459456\/pmT48eHQ_normal.jpg","profile_banner_url":"https:\/\/pbs.twimg.com\/profile_banners\/1451773004\/1434028060","profile_link_color":"0084B4","profile_sidebar_border_color":"FFFFFF","profile_sidebar_fill_color":"DDEEF6","profile_text_color":"333333","profile_use_background_image":true,"has_extended_profile":false,"default_profile":false,"default_profile_image":false,"following":null,"follow_request_sent":null,"notifications":null}
