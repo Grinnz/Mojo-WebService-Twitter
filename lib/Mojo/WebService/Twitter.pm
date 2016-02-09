@@ -25,9 +25,9 @@ sub authentication {
 		$self->{authentication} = $auth;
 	} elsif (ref $auth eq 'HASH') {
 		if (defined $auth->{access_token}) {
-			$self->{authentication} = $self->_oauth2(token => $auth->{access_token});
+			$self->{authentication} = $self->_oauth2($auth->{access_token});
 		} elsif (defined $auth->{oauth_token} and defined $auth->{oauth_token_secret}) {
-			$self->{authentication} = $self->_oauth(token => $auth->{oauth_token}, token_secret => $auth->{oauth_token_secret});
+			$self->{authentication} = $self->_oauth($auth->{oauth_token}, $auth->{oauth_token_secret});
 		} else {
 			croak 'Unrecognized authentication hashref (no oauth_token or access_token)';
 		}

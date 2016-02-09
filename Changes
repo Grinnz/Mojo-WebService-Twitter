@@ -1,4 +1,5 @@
 {{$NEXT}}
+  - Fix setting authentication based on returned hashrefs
 
 0.001     2016-02-08 23:39:02 EST
   - First release
