@@ -10,13 +10,10 @@ use Mojo::Util qw(b64_encode url_escape);
 use Mojo::WebService::Twitter::Error 'twitter_tx_error';
 use Mojo::WebService::Twitter::Tweet;
 use Mojo::WebService::Twitter::User;
+use Mojo::WebService::Twitter::Util;
 use WWW::OAuth;
 
 our $VERSION = '0.001';
-
-our $API_BASE_URL = 'https://api.twitter.com/1.1/';
-our $OAUTH_BASE_URL = 'https://api.twitter.com/oauth/';
-our $OAUTH2_BASE_URL = 'https://api.twitter.com/oauth2/';
 
 has ['api_key','api_secret'];
 has 'ua' => sub { Mojo::UserAgent->new };
@@ -286,11 +283,9 @@ sub verify_credentials {
 	}
 }
 
-sub _api_url { Mojo::URL->new($API_BASE_URL)->path(shift) }
-
-sub _oauth_url { Mojo::URL->new($OAUTH_BASE_URL)->path(shift) }
-
-sub _oauth2_url { Mojo::URL->new($OAUTH2_BASE_URL)->path(shift) }
+sub _api_url { Mojo::WebService::Twitter::Util::_api_url(@_) }
+sub _oauth_url { Mojo::WebService::Twitter::Util::_oauth_url(@_) }
+sub _oauth2_url { Mojo::WebService::Twitter::Util::_oauth2_url(@_) }
 
 sub _oauth {
 	my $self = shift;

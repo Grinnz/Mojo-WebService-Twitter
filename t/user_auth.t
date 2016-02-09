@@ -51,9 +51,9 @@ if ($ENV{AUTHOR_TESTING} and defined $api_key and defined $api_secret) {
 	$test_online = 1;
 } else {
 	diag 'Running offline test for Twitter; set AUTHOR_TESTING and TWITTER_API_KEY/TWITTER_API_SECRET for online test';
-	$Mojo::WebService::Twitter::API_BASE_URL = '/api/';
-	$Mojo::WebService::Twitter::OAUTH_BASE_URL = '/oauth/';
-	$Mojo::WebService::Twitter::OAUTH2_BASE_URL = '/oauth2/';
+	$Mojo::WebService::Twitter::Util::API_BASE_URL = '/api/';
+	$Mojo::WebService::Twitter::Util::OAUTH_BASE_URL = '/oauth/';
+	$Mojo::WebService::Twitter::Util::OAUTH2_BASE_URL = '/oauth2/';
 	$api_key = TEST_API_KEY;
 	$api_secret = TEST_API_SECRET;
 }
