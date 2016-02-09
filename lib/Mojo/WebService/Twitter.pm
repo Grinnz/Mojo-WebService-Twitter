@@ -2,9 +2,8 @@ package Mojo::WebService::Twitter;
 use Mojo::Base -base;
 
 use Carp 'croak';
-use Scalar::Util 'blessed', 'weaken';
+use Scalar::Util 'blessed';
 use Mojo::Collection;
-use Mojo::URL;
 use Mojo::UserAgent;
 use Mojo::Util qw(b64_encode url_escape);
 use Mojo::WebService::Twitter::Error 'twitter_tx_error';
