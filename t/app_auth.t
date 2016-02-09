@@ -153,7 +153,7 @@ foreach my $id (keys %user_data) {
 	ok $user->statuses >= $data->{statuses}, "at least $data->{statuses} statuses";
 	is $user->time_zone, $data->{time_zone}, 'right time zone';
 	is $user->url, $data->{url}, 'right url';
-	cmp_ok $user->utc_offset, '==', $data->{utc_offset}, 'right UTC offset';
+	ok defined($user->utc_offset), 'UTC offset is set';
 	ok !($user->verified xor $data->{verified}), 'right verified status';
 	ok $user->last_tweet->created_at >= $data->{last_tweet_ts}, "last tweet after $data->{last_tweet_ts}";
 }
