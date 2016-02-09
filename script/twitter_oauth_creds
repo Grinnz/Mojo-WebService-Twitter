@@ -6,12 +6,17 @@ use Mojo::WebService::Twitter::Util 'twitter_authorize_url';
 
 our $VERSION = '0.001';
 
+my $api_key = $ENV{TWITTER_API_KEY};
+my $api_secret = $ENV{TWITTER_API_SECRET};
+
 my $twitter = Mojo::WebService::Twitter->new;
-print "Enter Twitter API key: ";
-chomp(my $api_key = readline STDIN);
+unless (defined $api_key and defined $api_secret) {
+	print "Enter Twitter API key: ";
+	chomp($api_key = readline STDIN);
+	print "Enter Twitter API secret: ";
+	chomp($api_secret = readline STDIN);
+}
 $twitter->api_key($api_key);
-print "Enter Twitter API secret: ";
-chomp(my $api_secret = readline STDIN);
 $twitter->api_secret($api_secret);
 
 my $res = $twitter->request_oauth;
@@ -42,14 +47,17 @@ application
 =head1 DESCRIPTION
 
 L<twitter_oauth_creds> is an interactive script for retrieving OAuth 1.0
-credentials to authorize a Twitter application to act on behalf of a user. The
-script will first prompt for your application's Twitter API key and secret,
-which you can obtain L<here|https://apps.twitter.com>. It will then print an
-authorization URL which the user should go to in order to authorize the
-application. The user will receive a PIN after authorizing, which should be
-entered back into the script to receive an access token and secret. The token
-and secret can be stored and used to authorize the application on behalf of
-that user in the future, such as with L<Mojo::WebService::Twitter>.
+credentials to authorize a Twitter application to act on behalf of a user.
+
+The script will first prompt for your application's Twitter API key and secret,
+which you can obtain L<here|https://apps.twitter.com>. The API key and secret
+can also be passed as environment variables C<TWITTER_API_KEY> and
+C<TWITTER_API_SECRET>. It will then print an authorization URL which the user
+should go to in order to authorize the application. The user will receive a PIN
+after authorizing, which should be entered back into the script to receive an
+access token and secret. The token and secret can be stored and used to
+authorize the application on behalf of that user in the future, such as with
+L<Mojo::WebService::Twitter>.
 
 =head1 BUGS
 
