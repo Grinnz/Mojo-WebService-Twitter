@@ -17,7 +17,7 @@ sub from_tx {
 	my ($self, $tx) = @_;
 	my $res = $tx->res;
 	delete $self->{connection_error};
-	delete $self->{errors};
+	delete $self->{api_errors};
 	$self->http_status($res->code);
 	$self->http_message($res->message);
 	return $self unless my $err = $res->error;
