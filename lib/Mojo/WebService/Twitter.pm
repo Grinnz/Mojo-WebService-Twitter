@@ -367,6 +367,9 @@ exception, while non-blocking API queries will pass the exception object to the
 callback. Consider organizing complex sequences of non-blocking queries with
 L<Mojo::IOLoop/"delay">.
 
+Note that this distribution implements only a subset of the Twitter API.
+Additional features may be added as requested.
+
 =head1 ATTRIBUTES
 
 L<Mojo::WebService::Twitter> implements the following attributes.
