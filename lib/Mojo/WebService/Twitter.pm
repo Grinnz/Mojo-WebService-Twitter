@@ -363,7 +363,9 @@ script can be used to obtain Twitter OAuth credentials for a user from the
 command-line. A web application may wish to implement its own OAuth
 authorization flow, passing a callback URL back to the application in
 L</"request_oauth">, then calling L</"verify_oauth"> with the passed verifier
-code to retrieve the credentials.
+code to retrieve the credentials. See the
+L<Twitter documentation|https://dev.twitter.com/web/sign-in/implementing> for
+more details.
 
 All methods which query the Twitter API can be called with an optional trailing
 callback argument to run a non-blocking API query. On transport, HTTP, or API
