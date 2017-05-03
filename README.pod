@@ -55,7 +55,8 @@ callback. Consider organizing complex sequences of non-blocking queries with
 L<Mojo::IOLoop/"delay">.
 
 Note that this distribution implements only a subset of the Twitter API.
-Additional features may be added as requested.
+Additional features may be added as requested. See L<Twitter::API> for a more
+fully-featured lightweight and modern twitter client library.
 
 =head1 ATTRIBUTES
 
@@ -332,6 +333,6 @@ This is free software, licensed under:
 
 =head1 SEE ALSO
 
-L<Net::Twitter>, L<WWW::OAuth>
+L<Twitter::API>, L<WWW::OAuth>
 
 =cut
