@@ -1,8 +1,11 @@
 {{$NEXT}}
-  - Always retrieve extended tweets so the full text is available, since many
-    tweets now exceed 140 characters.
+  - Always retrieve extended tweets so the full text is available in the text
+    attribute of tweet objects, since many tweets now exceed 140 characters.
+    Returned text will not include prefixed mentions or suffixed media links.
   - Document that time_zone and utc_offset in user objects will now always be
     undefined.
+  - Add media attribute to tweet objects, and media object class to represent
+    the extended media entities.
 
 0.002     2016-02-09 00:54:31 EST
   - Fix setting authentication based on returned hashrefs
