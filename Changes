@@ -1,4 +1,8 @@
 {{$NEXT}}
+  - Always retrieve extended tweets so the full text is available, since many
+    tweets now exceed 140 characters.
+  - Document that time_zone and utc_offset in user objects will now always be
+    undefined.
 
 0.002     2016-02-09 00:54:31 EST
   - Fix setting authentication based on returned hashrefs

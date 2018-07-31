@@ -19,7 +19,7 @@ sub from_source {
 	$self->in_reply_to_status_id($source->{in_reply_to_status_id_str}) if defined $source->{in_reply_to_status_id_str};
 	$self->in_reply_to_user_id($source->{in_reply_to_user_id_str}) if defined $source->{in_reply_to_user_id_str};
 	$self->retweets($source->{retweet_count});
-	$self->text($source->{text});
+	$self->text($source->{full_text});
 	$self->user(Mojo::WebService::Twitter::User->new->from_source($source->{user})) if defined $source->{user};
 	$self->source($source);
 	return $self;

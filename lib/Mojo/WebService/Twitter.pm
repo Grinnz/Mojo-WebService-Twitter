@@ -142,7 +142,7 @@ sub get_tweet {
 	croak 'Tweet ID is required for get_tweet' unless defined $id;
 	croak 'Invalid tweet ID to retrieve' unless $id =~ m/\A[0-9]+\z/;
 	my $ua = $self->ua;
-	my $tx = $ua->build_tx(GET => _api_url('statuses/show.json')->query(id => $id));
+	my $tx = $ua->build_tx(GET => _api_url('statuses/show.json')->query(id => $id, tweet_mode => 'extended'));
 	$self->authentication->($tx->req);
 	if ($cb) {
 		$ua->start($tx, sub {
@@ -164,6 +164,7 @@ sub get_user {
 	$query{user_id} = $params{user_id} if defined $params{user_id};
 	$query{screen_name} = $params{screen_name} if defined $params{screen_name};
 	croak 'user_id or screen_name is required for get_user' unless %query;
+	$query{tweet_mode} = 'extended';
 	my $ua = $self->ua;
 	my $tx = $ua->build_tx(GET => _api_url('users/show.json')->query(%query));
 	$self->authentication->($tx->req);
@@ -190,6 +191,7 @@ sub post_tweet {
 		qw(in_reply_to_status_id lat long place_id);
 	$form{$_} = $params{$_} ? 'true' : 'false' for grep { defined $params{$_} }
 		qw(display_coordinates);
+	$form{tweet_mode} = 'extended';
 	my $ua = $self->ua;
 	my $tx = $ua->build_tx(POST => _api_url('statuses/update.json'), form => \%form);
 	$self->authentication->($tx->req);
@@ -213,7 +215,7 @@ sub retweet {
 	$id = $id->id if blessed $id and $id->isa('Mojo::WebService::Twitter::Tweet');
 	croak 'Invalid tweet ID to retweet' unless $id =~ m/\A[0-9]+\z/;
 	my $ua = $self->ua;
-	my $tx = $ua->build_tx(POST => _api_url("statuses/retweet/$id.json"));
+	my $tx = $ua->build_tx(POST => _api_url("statuses/retweet/$id.json")->query(tweet_mode => 'extended'));
 	$self->authentication->($tx->req);
 	if ($cb) {
 		$ua->start($tx, sub {
@@ -243,6 +245,7 @@ sub search_tweets {
 	}
 	$query{geocode} = $geocode if defined $geocode;
 	$query{$_} = $params{$_} for grep { defined $params{$_} } qw(lang result_type count until since_id max_id);
+	$query{tweet_mode} = 'extended';
 	my $ua = $self->ua;
 	my $tx = $ua->build_tx(GET => _api_url('search/tweets.json')->query(%query));
 	$self->authentication->($tx->req);
@@ -264,7 +267,7 @@ sub verify_credentials {
 	my ($self) = @_;
 	
 	my $ua = $self->ua;
-	my $tx = $ua->build_tx(GET => _api_url('account/verify_credentials.json'));
+	my $tx = $ua->build_tx(GET => _api_url('account/verify_credentials.json')->query(tweet_mode => 'extended'));
 	$self->authentication->($tx->req);
 	
 	if ($cb) {
