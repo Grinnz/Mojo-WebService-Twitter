@@ -6,6 +6,7 @@
     undefined.
   - Add media attribute to tweet objects, and media object class to represent
     the extended media entities.
+  - Add _p variants of each Twitter API request method using promises.
 
 0.002     2016-02-09 00:54:31 EST
   - Fix setting authentication based on returned hashrefs

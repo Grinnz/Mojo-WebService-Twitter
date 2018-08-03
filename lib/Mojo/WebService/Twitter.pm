@@ -43,29 +43,41 @@ sub authentication {
 
 sub request_oauth {
 	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
-	my ($self, $url) = @_;
-	$url //= 'oob';
-	
-	my $ua = $self->ua;
-	my $tx = $ua->build_tx(POST => _oauth_url('request_token'));
-	$self->_oauth->($tx->req, { oauth_callback => $url });
-	
+	my $self = shift;
+	my $tx = $self->_build_request_oauth(@_);
 	if ($cb) {
-		$ua->start($tx, sub {
+		$self->ua->start($tx, sub {
 			my ($ua, $tx) = @_;
 			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
-			my $res = $self->_from_oauth_request($tx) // return $self->$cb('OAuth callback was not confirmed');
+			my $res = $self->_from_request_oauth($tx) // return $self->$cb('OAuth callback was not confirmed');
 			$self->$cb(undef, $res);
 		});
 	} else {
-		$tx = $ua->start($tx);
+		$tx = $self->ua->start($tx);
 		die twitter_tx_error($tx) . "\n" if $tx->error;
-		my $res = $self->_from_oauth_request($tx) // die "OAuth callback was not confirmed\n";
-		return $res;
+		return $self->_from_request_oauth($tx) // die "OAuth callback was not confirmed\n";
 	}
 }
 
-sub _from_oauth_request {
+sub request_oauth_p {
+	my $self = shift;
+	my $tx = $self->_build_request_oauth(@_);
+	return $self->ua->start_p($tx)->then(sub {
+		my ($tx) = @_;
+		die twitter_tx_error($tx) . "\n" if $tx->error;
+		return $self->_from_request_oauth($tx) // die "OAuth callback was not confirmed\n";
+	});
+}
+
+sub _build_request_oauth {
+	my ($self, $url) = @_;
+	$url //= 'oob';
+	my $tx = $self->ua->build_tx(POST => _oauth_url('request_token'));
+	$self->_oauth->($tx->req, { oauth_callback => $url });
+	return $tx;
+}
+
+sub _from_request_oauth {
 	my ($self, $tx) = @_;
 	my $params = Mojo::Parameters->new($tx->res->text)->to_hash;
 	return undef unless $params->{oauth_callback_confirmed} eq 'true'
@@ -76,27 +88,38 @@ sub _from_oauth_request {
 
 sub verify_oauth {
 	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
-	my ($self, $verifier, $request_token, $request_token_secret) = @_;
-	
-	$request_token_secret //= delete $self->{request_token_secrets}{$request_token} // croak "Unknown request token";
-	
-	my $ua = $self->ua;
-	my $tx = $ua->build_tx(POST => _oauth_url('access_token'));
-	$self->_oauth($request_token, $request_token_secret)->($tx->req, { oauth_verifier => $verifier });
-	
+	my $self = shift;
+	my $tx = $self->_build_verify_oauth(@_);
 	if ($cb) {
-		$ua->start($tx, sub {
+		$self->ua->start($tx, sub {
 			my ($ua, $tx) = @_;
 			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
 			my $res = $self->_from_verify_oauth($tx) // return $self->$cb('No OAuth token returned');
 			$self->$cb(undef, $res);
 		});
 	} else {
-		$tx = $ua->start($tx);
+		$tx = $self->ua->start($tx);
 		die twitter_tx_error($tx) . "\n" if $tx->error;
-		my $res = $self->_from_verify_oauth($tx) // die "No OAuth token returned\n";
-		return $res;
+		return $self->_from_verify_oauth($tx) // die "No OAuth token returned\n";
 	}
+}
+
+sub verify_oauth_p {
+	my $self = shift;
+	my $tx = $self->_build_verify_oauth(@_);
+	return $self->ua->start_p($tx)->then(sub {
+		my ($tx) = @_;
+		die twitter_tx_error($tx) . "\n" if $tx->error;
+		return $self->_from_verify_oauth($tx) // die "No OAuth token returned\n";
+	});
+}
+
+sub _build_verify_oauth {
+	my ($self, $verifier, $request_token, $request_token_secret) = @_;
+	$request_token_secret //= delete $self->{request_token_secrets}{$request_token} // croak "Unknown request token";
+	my $tx = $self->ua->build_tx(POST => _oauth_url('access_token'));
+	$self->_oauth($request_token, $request_token_secret)->($tx->req, { oauth_verifier => $verifier });
+	return $tx;
 }
 
 sub _from_verify_oauth {
@@ -109,27 +132,39 @@ sub _from_verify_oauth {
 sub request_oauth2 {
 	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
 	my $self = shift;
-	
-	my $ua = $self->ua;
-	my $tx = $ua->build_tx(POST => _oauth2_url('token'), form => { grant_type => 'client_credentials' });
-	$self->_oauth2_request->($tx->req);
-	
+	my $tx = $self->_build_request_oauth2(@_);
 	if ($cb) {
-		$ua->start($tx, sub {
+		$self->ua->start($tx, sub {
 			my ($ua, $tx) = @_;
 			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
-			my $res = $self->_from_oauth2_request($tx) // return $self->$cb('No bearer token returned');
+			my $res = $self->_from_request_oauth2($tx) // return $self->$cb('No bearer token returned');
 			$self->$cb(undef, $res);
 		});
 	} else {
-		$tx = $ua->start($tx);
+		$tx = $self->ua->start($tx);
 		die twitter_tx_error($tx) . "\n" if $tx->error;
-		my $res = $self->_from_oauth2_request($tx) // die "No bearer token returned\n";
-		return $res;
+		return $self->_from_request_oauth2($tx) // die "No bearer token returned\n";
 	}
 }
 
-sub _from_oauth2_request {
+sub request_oauth2_p {
+	my $self = shift;
+	my $tx = $self->_build_request_oauth2(@_);
+	return $self->ua->start_p($tx)->then(sub {
+		my ($tx) = @_;
+		die twitter_tx_error($tx) . "\n" if $tx->error;
+		return $self->_from_request_oauth2($tx) // die "No bearer token returned\n";
+	});
+}
+
+sub _build_request_oauth2 {
+	my ($self) = @_;
+	my $tx = $self->ua->build_tx(POST => _oauth2_url('token'), form => { grant_type => 'client_credentials' });
+	$self->_oauth2_request->($tx->req);
+	return $tx;
+}
+
+sub _from_request_oauth2 {
 	my ($self, $tx) = @_;
 	my $params = $tx->res->json // {};
 	return undef unless defined $params->{access_token};
@@ -138,51 +173,107 @@ sub _from_oauth2_request {
 
 sub get_tweet {
 	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
-	my ($self, $id) = @_;
-	croak 'Tweet ID is required for get_tweet' unless defined $id;
-	croak 'Invalid tweet ID to retrieve' unless $id =~ m/\A[0-9]+\z/;
-	my $ua = $self->ua;
-	my $tx = $ua->build_tx(GET => _api_url('statuses/show.json')->query(id => $id, tweet_mode => 'extended'));
-	$self->authentication->($tx->req);
+	my $self = shift;
+	my $tx = $self->_build_get_tweet(@_);
 	if ($cb) {
-		$ua->start($tx, sub {
+		$self->ua->start($tx, sub {
 			my ($ua, $tx) = @_;
 			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
 			$self->$cb(undef, _tweet_object($tx->res->json));
 		});
 	} else {
-		$tx = $ua->start($tx);
+		$tx = $self->ua->start($tx);
 		die twitter_tx_error($tx) . "\n" if $tx->error;
 		return _tweet_object($tx->res->json);
 	}
 }
 
+sub get_tweet_p {
+	my $self = shift;
+	my $tx = $self->_build_get_tweet(@_);
+	return $self->ua->start_p($tx)->then(sub {
+		my ($tx) = @_;
+		die twitter_tx_error($tx) . "\n" if $tx->error;
+		return _tweet_object($tx->res->json);
+	});
+}
+
+sub _build_get_tweet {
+	my ($self, $id) = @_;
+	croak 'Tweet ID is required for get_tweet' unless defined $id;
+	croak 'Invalid tweet ID to retrieve' unless $id =~ m/\A[0-9]+\z/;
+	my $tx = $self->ua->build_tx(GET => _api_url('statuses/show.json')->query(id => $id, tweet_mode => 'extended'));
+	$self->authentication->($tx->req);
+	return $tx;
+}
+
 sub get_user {
 	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
+	my $self = shift;
+	my $tx = $self->_build_get_user(@_);
+	if ($cb) {
+		$self->ua->start($tx, sub {
+			my ($ua, $tx) = @_;
+			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
+			$self->$cb(undef, _user_object($tx->res->json));
+		});
+	} else {
+		$tx = $self->ua->start($tx);
+		die twitter_tx_error($tx) . "\n" if $tx->error;
+		return _user_object($tx->res->json);
+	}
+}
+
+sub get_user_p {
+	my $self = shift;
+	my $tx = $self->_build_get_user(@_);
+	return $self->ua->start_p($tx)->then(sub {
+		my ($tx) = @_;
+		die twitter_tx_error($tx) . "\n" if $tx->error;
+		return _user_object($tx->res->json);
+	});
+}
+
+sub _build_get_user {
 	my ($self, %params) = @_;
 	my %query;
 	$query{user_id} = $params{user_id} if defined $params{user_id};
 	$query{screen_name} = $params{screen_name} if defined $params{screen_name};
 	croak 'user_id or screen_name is required for get_user' unless %query;
 	$query{tweet_mode} = 'extended';
-	my $ua = $self->ua;
-	my $tx = $ua->build_tx(GET => _api_url('users/show.json')->query(%query));
+	my $tx = $self->ua->build_tx(GET => _api_url('users/show.json')->query(%query));
 	$self->authentication->($tx->req);
-	if ($cb) {
-		$ua->start($tx, sub {
-			my ($ua, $tx) = @_;
-			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
-			$self->$cb(undef, _user_object($tx->res->json));
-		});
-	} else {
-		$tx = $ua->start($tx);
-		die twitter_tx_error($tx) . "\n" if $tx->error;
-		return _user_object($tx->res->json);
-	}
+	return $tx;
 }
 
 sub post_tweet {
 	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
+	my $self = shift;
+	my $tx = $self->_build_post_tweet(@_);
+	if ($cb) {
+		$self->ua->start($tx, sub {
+			my ($ua, $tx) = @_;
+			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
+			$self->$cb(undef, _tweet_object($tx->res->json));
+		});
+	} else {
+		$tx = $self->ua->start($tx);
+		die twitter_tx_error($tx) . "\n" if $tx->error;
+		return _tweet_object($tx->res->json);
+	}
+}
+
+sub post_tweet_p {
+	my $self = shift;
+	my $tx = $self->_build_post_tweet(@_);
+	return $self->ua->start_p($tx)->then(sub {
+		my ($tx) = @_;
+		die twitter_tx_error($tx) . "\n" if $tx->error;
+		return _tweet_object($tx->res->json);
+	});
+}
+
+sub _build_post_tweet {
 	my ($self, $status, %params) = @_;
 	croak 'Status text is required to post a tweet' unless defined $status;
 	my %form;
@@ -192,46 +283,76 @@ sub post_tweet {
 	$form{$_} = $params{$_} ? 'true' : 'false' for grep { defined $params{$_} }
 		qw(display_coordinates);
 	$form{tweet_mode} = 'extended';
-	my $ua = $self->ua;
-	my $tx = $ua->build_tx(POST => _api_url('statuses/update.json'), form => \%form);
+	my $tx = $self->ua->build_tx(POST => _api_url('statuses/update.json'), form => \%form);
 	$self->authentication->($tx->req);
-	if ($cb) {
-		$ua->start($tx, sub {
-			my ($ua, $tx) = @_;
-			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
-			$self->$cb(undef, _tweet_object($tx->res->json));
-		});
-	} else {
-		$tx = $ua->start($tx);
-		die twitter_tx_error($tx) . "\n" if $tx->error;
-		return _tweet_object($tx->res->json);
-	}
+	return $tx;
 }
 
 sub retweet {
 	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
-	my ($self, $id) = @_;
-	croak 'Tweet ID is required for retweet' unless defined $id;
-	$id = $id->id if blessed $id and $id->isa('Mojo::WebService::Twitter::Tweet');
-	croak 'Invalid tweet ID to retweet' unless $id =~ m/\A[0-9]+\z/;
-	my $ua = $self->ua;
-	my $tx = $ua->build_tx(POST => _api_url("statuses/retweet/$id.json")->query(tweet_mode => 'extended'));
-	$self->authentication->($tx->req);
+	my $self = shift;
+	my $tx = $self->_build_retweet(@_);
 	if ($cb) {
-		$ua->start($tx, sub {
+		$self->ua->start($tx, sub {
 			my ($ua, $tx) = @_;
 			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
 			$self->$cb(undef, _tweet_object($tx->res->json));
 		});
 	} else {
-		$tx = $ua->start($tx);
+		$tx = $self->ua->start($tx);
 		die twitter_tx_error($tx) . "\n" if $tx->error;
 		return _tweet_object($tx->res->json);
 	}
 }
 
+sub retweet_p {
+	my $self = shift;
+	my $tx = $self->_build_retweet(@_);
+	return $self->ua->start_p($tx)->then(sub {
+		my ($tx) = @_;
+		die twitter_tx_error($tx) . "\n" if $tx->error;
+		return _tweet_object($tx->res->json);
+	});
+}
+
+sub _build_retweet {
+	my ($self, $id) = @_;
+	croak 'Tweet ID is required for retweet' unless defined $id;
+	$id = $id->id if blessed $id and $id->isa('Mojo::WebService::Twitter::Tweet');
+	croak 'Invalid tweet ID to retweet' unless $id =~ m/\A[0-9]+\z/;
+	my $tx = $self->ua->build_tx(POST => _api_url("statuses/retweet/$id.json")->query(tweet_mode => 'extended'));
+	$self->authentication->($tx->req);
+	return $tx;
+}
+
 sub search_tweets {
 	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
+	my $self = shift;
+	my $tx = $self->_build_search_tweets(@_);
+	if ($cb) {
+		$self->ua->start($tx, sub {
+			my ($ua, $tx) = @_;
+			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
+			$self->$cb(undef, Mojo::Collection->new(map { _tweet_object($_) } @{$tx->res->json->{statuses} // []}));
+		});
+	} else {
+		$tx = $self->ua->start($tx);
+		die twitter_tx_error($tx) . "\n" if $tx->error;
+		return Mojo::Collection->new(map { _tweet_object($_) } @{$tx->res->json->{statuses} // []});
+	}
+}
+
+sub search_tweets_p {
+	my $self = shift;
+	my $tx = $self->_build_search_tweets(@_);
+	return $self->ua->start_p($tx)->then(sub {
+		my ($tx) = @_;
+		die twitter_tx_error($tx) . "\n" if $tx->error;
+		return Mojo::Collection->new(map { _tweet_object($_) } @{$tx->res->json->{statuses} // []});
+	});
+}
+
+sub _build_search_tweets {
 	my ($self, $q, %params) = @_;
 	croak 'Search query is required for search_tweets' unless defined $q;
 	my %query;
@@ -246,43 +367,43 @@ sub search_tweets {
 	$query{geocode} = $geocode if defined $geocode;
 	$query{$_} = $params{$_} for grep { defined $params{$_} } qw(lang result_type count until since_id max_id);
 	$query{tweet_mode} = 'extended';
-	my $ua = $self->ua;
-	my $tx = $ua->build_tx(GET => _api_url('search/tweets.json')->query(%query));
+	my $tx = $self->ua->build_tx(GET => _api_url('search/tweets.json')->query(%query));
 	$self->authentication->($tx->req);
-	if ($cb) {
-		$ua->start($tx, sub {
-			my ($ua, $tx) = @_;
-			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
-			$self->$cb(undef, Mojo::Collection->new(map { _tweet_object($_) } @{$tx->res->json->{statuses} // []}));
-		});
-	} else {
-		$tx = $ua->start($tx);
-		die twitter_tx_error($tx) . "\n" if $tx->error;
-		return Mojo::Collection->new(map { _tweet_object($_) } @{$tx->res->json->{statuses} // []});
-	}
+	return $tx;
 }
 
 sub verify_credentials {
 	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
-	my ($self) = @_;
-	
-	my $ua = $self->ua;
-	my $tx = $ua->build_tx(GET => _api_url('account/verify_credentials.json')->query(tweet_mode => 'extended'));
-	$self->authentication->($tx->req);
-	
+	my $self = shift;
+	my $tx = $self->_build_verify_credentials(@_);
 	if ($cb) {
-		$ua->start($tx, sub {
+		$self->ua->start($tx, sub {
 			my ($ua, $tx) = @_;
 			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
-			my $user = Mojo::WebService::Twitter::User->new(twitter => $self)->from_source($tx->res->json);
-			$self->$cb(undef, $user);
+			$self->$cb(undef, Mojo::WebService::Twitter::User->new(twitter => $self)->from_source($tx->res->json));
 		});
 	} else {
-		$tx = $ua->start($tx);
+		$tx = $self->ua->start($tx);
 		die twitter_tx_error($tx) . "\n" if $tx->error;
-		my $user = Mojo::WebService::Twitter::User->new(twitter => $self)->from_source($tx->res->json);
-		return $user;
+		return Mojo::WebService::Twitter::User->new(twitter => $self)->from_source($tx->res->json);
 	}
+}
+
+sub verify_credentials_p {
+	my $self = shift;
+	my $tx = $self->_build_verify_credentials(@_);
+	return $self->ua->start_p($tx)->then(sub {
+		my ($tx) = @_;
+		die twitter_tx_error($tx) . "\n" if $tx->error;
+		return Mojo::WebService::Twitter::User->new(twitter => $self)->from_source($tx->res->json);
+	});
+}
+
+sub _build_verify_credentials {
+	my ($self) = @_;
+	my $tx = $self->ua->build_tx(GET => _api_url('account/verify_credentials.json')->query(tweet_mode => 'extended'));
+	$self->authentication->($tx->req);
+	return $tx;
 }
 
 sub _api_url { Mojo::WebService::Twitter::Util::_api_url(@_) }
@@ -345,6 +466,15 @@ Mojo::WebService::Twitter - Simple Twitter API client
  });
  Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
  
+ # Non-blocking API request using promises
+ $twitter->get_tweet_p($tweet_id)->then(sub {
+   my ($tweet) = @_;
+   say 'Tweet: ' . $tweet->text;
+ })->catch(sub {
+   my ($err) = @_;
+   say "Error: $err";
+ })->wait;
+ 
  # Some requests require authentication on behalf of a user
  $twitter->authentication(oauth => $token, $secret);
  my $authorizing_user = $twitter->verify_credentials;
@@ -376,6 +506,9 @@ error, blocking API queries will throw a L<Mojo::WebService::Twitter::Error>
 exception, while non-blocking API queries will pass the exception object to the
 callback. Consider organizing complex sequences of non-blocking queries with
 L<Mojo::IOLoop/"delay">.
+
+Instead of a trailing callback, the C<_p> variants of each method will return a
+L<Mojo::Promise> that can be used to easily manage the non-blocking API query.
 
 Note that this distribution implements only a subset of the Twitter API.
 Additional features may be added as requested. See L<Twitter::API> for a more
@@ -431,11 +564,14 @@ object as the first parameter, and an optional hashref of C<oauth_> parameters.
 
 =head2 request_oauth
 
+=head2 request_oauth_p
+
  my $res = $twitter->request_oauth;
  my $res = $twitter->request_oauth($callback_url);
  $twitter->request_oauth(sub {
    my ($twitter, $error, $res) = @_;
  });
+ my $p = $twitter->request_oauth_p;
 
 Send an OAuth 1.0 authorization request and return a hashref containing
 C<oauth_token> and C<oauth_token_secret> (request token and secret). An
@@ -450,10 +586,13 @@ L</"verify_oauth"> to retrieve an access token and secret.
 
 =head2 verify_oauth
 
+=head2 verify_oauth_p
+
  my $res = $twitter->verify_oauth($verifier, $request_token, $request_token_secret);
  $twitter->verify_oauth($verifier, $request_token, $request_token_secret, sub {
    my ($twitter, $error, $res) = @_;
  });
+ my $p = $twitter->verify_oauth_p($verifier, $request_token, $request_token_secret);
 
 Verify an OAuth 1.0 authorization request with the verifier string or PIN from
 the authorizing user, and the previously obtained request token and secret. The
@@ -464,10 +603,13 @@ on behalf of the user.
 
 =head2 request_oauth2
 
+=head2 request_oauth2_p
+
  my $res = $twitter->request_oauth2;
  $twitter->request_oauth2(sub {
    my ($twitter, $error, $res) = @_;
  });
+ my $p = $twitter->request_oauth2_p;
 
 Request OAuth 2 credentials and return a hashref containing an C<access_token>
 that can be passed directly to L</"authentication"> to authenticate requests on
@@ -475,29 +617,38 @@ behalf of the application itself.
 
 =head2 get_tweet
 
+=head2 get_tweet_p
+
  my $tweet = $twitter->get_tweet($tweet_id);
  $twitter->get_tweet($tweet_id, sub {
    my ($twitter, $err, $tweet) = @_;
  });
+ $twitter->get_tweet_p($tweet_id);
 
 Retrieve a L<Mojo::WebService::Twitter::Tweet> by tweet ID.
 
 =head2 get_user
+
+=head2 get_user_p
 
  my $user = $twitter->get_user(user_id => $user_id);
  my $user = $twitter->get_user(screen_name => $screen_name);
  $twitter->get_user(screen_name => $screen_name, sub {
    my ($twitter, $err, $user) = @_;
  });
+ my $p = $twitter->get_user_p(user_id => $user_id);
 
 Retrieve a L<Mojo::WebService::Twitter::User> by user ID or screen name.
 
 =head2 post_tweet
 
+=head2 post_tweet_p
+
  my $tweet = $twitter->post_tweet($text, %options);
  $twitter->post_tweet($text, %options, sub {
  	my ($twitter, $err, $tweet) = @_;
  });
+ my $p = $twitter->post_tweet_p($text, %options);
 
 Post a status update (tweet) and retrieve the resulting
 L<Mojo::WebService::Twitter::Tweet>. Requires OAuth 1.0 authentication. Accepts
@@ -549,10 +700,13 @@ If true, tweet will display the exact coordinates the tweet was sent from.
 
 =head2 retweet
 
+=head2 retweet_p
+
  my $tweet = $twitter->retweet($tweet_id);
  $twitter->retweet($tweet_id, sub {
    my ($twitter, $err, $tweet) = @_;
  });
+ my $p = $twitter->retweet_p($tweet_id);
 
 Retweet the tweet ID or L<Mojo::WebService::Twitter::Tweet> object. Returns a
 L<Mojo::WebService::Twitter::Tweet> representing the original tweet. Requires
@@ -560,11 +714,14 @@ OAuth 1.0 authentication.
 
 =head2 search_tweets
 
+=head2 search_tweets_p
+
  my $tweets = $twitter->search_tweets($query);
  my $tweets = $twitter->search_tweets($query, %options);
  $twitter->search_tweets($query, %options, sub {
    my ($twitter, $err, $tweets) = @_;
  });
+ my $p = $twitter->search_tweets_p($query, %options);
 
 Search Twitter and return a L<Mojo::Collection> of L<Mojo::WebService::Twitter::Tweet>
 objects. Accepts the following options:
@@ -630,10 +787,13 @@ filtering results with C<since_id> and C<max_id>.
 
 =head2 verify_credentials
 
+=head2 verify_credentials_p
+
  my $user = $twitter->verify_credentials;
  $twitter->verify_credentials(sub {
    my ($twitter, $error, $user) = @_;
  });
+ my $p = $twitter->verify_credentials_p;
 
 Verify the authorizing user's credentials and return a representative
 L<Mojo::WebService::Twitter::User> object. Requires OAuth 1.0 authentication.
