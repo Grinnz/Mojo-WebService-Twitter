@@ -22,6 +22,15 @@ Mojo::WebService::Twitter - Simple Twitter API client
  });
  Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
  
+ # Non-blocking API request using promises
+ $twitter->get_tweet_p($tweet_id)->then(sub {
+   my ($tweet) = @_;
+   say 'Tweet: ' . $tweet->text;
+ })->catch(sub {
+   my ($err) = @_;
+   say "Error: $err";
+ })->wait;
+ 
  # Some requests require authentication on behalf of a user
  $twitter->authentication(oauth => $token, $secret);
  my $authorizing_user = $twitter->verify_credentials;
@@ -53,6 +62,9 @@ error, blocking API queries will throw a L<Mojo::WebService::Twitter::Error>
 exception, while non-blocking API queries will pass the exception object to the
 callback. Consider organizing complex sequences of non-blocking queries with
 L<Mojo::IOLoop/"delay">.
+
+Instead of a trailing callback, the C<_p> variants of each method will return a
+L<Mojo::Promise> that can be used to easily manage the non-blocking API query.
 
 Note that this distribution implements only a subset of the Twitter API.
 Additional features may be added as requested. See L<Twitter::API> for a more
@@ -108,11 +120,14 @@ object as the first parameter, and an optional hashref of C<oauth_> parameters.
 
 =head2 request_oauth
 
+=head2 request_oauth_p
+
  my $res = $twitter->request_oauth;
  my $res = $twitter->request_oauth($callback_url);
  $twitter->request_oauth(sub {
    my ($twitter, $error, $res) = @_;
  });
+ my $p = $twitter->request_oauth_p;
 
 Send an OAuth 1.0 authorization request and return a hashref containing
 C<oauth_token> and C<oauth_token_secret> (request token and secret). An
@@ -127,10 +142,13 @@ L</"verify_oauth"> to retrieve an access token and secret.
 
 =head2 verify_oauth
 
+=head2 verify_oauth_p
+
  my $res = $twitter->verify_oauth($verifier, $request_token, $request_token_secret);
  $twitter->verify_oauth($verifier, $request_token, $request_token_secret, sub {
    my ($twitter, $error, $res) = @_;
  });
+ my $p = $twitter->verify_oauth_p($verifier, $request_token, $request_token_secret);
 
 Verify an OAuth 1.0 authorization request with the verifier string or PIN from
 the authorizing user, and the previously obtained request token and secret. The
@@ -141,10 +159,13 @@ on behalf of the user.
 
 =head2 request_oauth2
 
+=head2 request_oauth2_p
+
  my $res = $twitter->request_oauth2;
  $twitter->request_oauth2(sub {
    my ($twitter, $error, $res) = @_;
  });
+ my $p = $twitter->request_oauth2_p;
 
 Request OAuth 2 credentials and return a hashref containing an C<access_token>
 that can be passed directly to L</"authentication"> to authenticate requests on
@@ -152,29 +173,38 @@ behalf of the application itself.
 
 =head2 get_tweet
 
+=head2 get_tweet_p
+
  my $tweet = $twitter->get_tweet($tweet_id);
  $twitter->get_tweet($tweet_id, sub {
    my ($twitter, $err, $tweet) = @_;
  });
+ $twitter->get_tweet_p($tweet_id);
 
 Retrieve a L<Mojo::WebService::Twitter::Tweet> by tweet ID.
 
 =head2 get_user
+
+=head2 get_user_p
 
  my $user = $twitter->get_user(user_id => $user_id);
  my $user = $twitter->get_user(screen_name => $screen_name);
  $twitter->get_user(screen_name => $screen_name, sub {
    my ($twitter, $err, $user) = @_;
  });
+ my $p = $twitter->get_user_p(user_id => $user_id);
 
 Retrieve a L<Mojo::WebService::Twitter::User> by user ID or screen name.
 
 =head2 post_tweet
 
+=head2 post_tweet_p
+
  my $tweet = $twitter->post_tweet($text, %options);
  $twitter->post_tweet($text, %options, sub {
  	my ($twitter, $err, $tweet) = @_;
  });
+ my $p = $twitter->post_tweet_p($text, %options);
 
 Post a status update (tweet) and retrieve the resulting
 L<Mojo::WebService::Twitter::Tweet>. Requires OAuth 1.0 authentication. Accepts
@@ -226,10 +256,13 @@ If true, tweet will display the exact coordinates the tweet was sent from.
 
 =head2 retweet
 
+=head2 retweet_p
+
  my $tweet = $twitter->retweet($tweet_id);
  $twitter->retweet($tweet_id, sub {
    my ($twitter, $err, $tweet) = @_;
  });
+ my $p = $twitter->retweet_p($tweet_id);
 
 Retweet the tweet ID or L<Mojo::WebService::Twitter::Tweet> object. Returns a
 L<Mojo::WebService::Twitter::Tweet> representing the original tweet. Requires
@@ -237,11 +270,14 @@ OAuth 1.0 authentication.
 
 =head2 search_tweets
 
+=head2 search_tweets_p
+
  my $tweets = $twitter->search_tweets($query);
  my $tweets = $twitter->search_tweets($query, %options);
  $twitter->search_tweets($query, %options, sub {
    my ($twitter, $err, $tweets) = @_;
  });
+ my $p = $twitter->search_tweets_p($query, %options);
 
 Search Twitter and return a L<Mojo::Collection> of L<Mojo::WebService::Twitter::Tweet>
 objects. Accepts the following options:
@@ -307,10 +343,13 @@ filtering results with C<since_id> and C<max_id>.
 
 =head2 verify_credentials
 
+=head2 verify_credentials_p
+
  my $user = $twitter->verify_credentials;
  $twitter->verify_credentials(sub {
    my ($twitter, $error, $user) = @_;
  });
+ my $p = $twitter->verify_credentials_p;
 
 Verify the authorizing user's credentials and return a representative
 L<Mojo::WebService::Twitter::User> object. Requires OAuth 1.0 authentication.

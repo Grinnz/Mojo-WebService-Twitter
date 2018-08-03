@@ -92,7 +92,7 @@ EOW
         "Carp" => 0,
         "Exporter" => 0,
         "IO::Socket::SSL" => "1.94",
-        "Mojolicious" => "6.0",
+        "Mojolicious" => "7.62",
         "Scalar::Util" => 0,
         "Time::Piece" => "1.17",
         "WWW::OAuth" => 0,
