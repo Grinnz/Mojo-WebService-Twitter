@@ -12,7 +12,7 @@ use Mojo::WebService::Twitter::User;
 use Mojo::WebService::Twitter::Util;
 use WWW::OAuth;
 
-our $VERSION = '1.000';
+our $VERSION = '1.001';
 
 has ['api_key','api_secret'];
 has 'ua' => sub { Mojo::UserAgent->new };
