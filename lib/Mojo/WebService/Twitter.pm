@@ -54,7 +54,7 @@ sub request_oauth {
 		});
 	} else {
 		$tx = $self->ua->start($tx);
-		die twitter_tx_error($tx) . "\n" if $tx->error;
+		die twitter_tx_error($tx) if $tx->error;
 		return $self->_from_request_oauth($tx) // die "OAuth callback was not confirmed\n";
 	}
 }
@@ -64,9 +64,9 @@ sub request_oauth_p {
 	my $tx = $self->_build_request_oauth(@_);
 	return $self->ua->start_p($tx)->then(sub {
 		my ($tx) = @_;
-		die twitter_tx_error($tx) . "\n" if $tx->error;
+		die twitter_tx_error($tx) if $tx->error;
 		return $self->_from_request_oauth($tx) // die "OAuth callback was not confirmed\n";
-	});
+	}, sub { die Mojo::WebService::Twitter::Error->new(connection_error => $_[0]) });
 }
 
 sub _build_request_oauth {
@@ -99,7 +99,7 @@ sub verify_oauth {
 		});
 	} else {
 		$tx = $self->ua->start($tx);
-		die twitter_tx_error($tx) . "\n" if $tx->error;
+		die twitter_tx_error($tx) if $tx->error;
 		return $self->_from_verify_oauth($tx) // die "No OAuth token returned\n";
 	}
 }
@@ -109,9 +109,9 @@ sub verify_oauth_p {
 	my $tx = $self->_build_verify_oauth(@_);
 	return $self->ua->start_p($tx)->then(sub {
 		my ($tx) = @_;
-		die twitter_tx_error($tx) . "\n" if $tx->error;
+		die twitter_tx_error($tx) if $tx->error;
 		return $self->_from_verify_oauth($tx) // die "No OAuth token returned\n";
-	});
+	}, sub { die Mojo::WebService::Twitter::Error->new(connection_error => $_[0]) });
 }
 
 sub _build_verify_oauth {
@@ -142,7 +142,7 @@ sub request_oauth2 {
 		});
 	} else {
 		$tx = $self->ua->start($tx);
-		die twitter_tx_error($tx) . "\n" if $tx->error;
+		die twitter_tx_error($tx) if $tx->error;
 		return $self->_from_request_oauth2($tx) // die "No bearer token returned\n";
 	}
 }
@@ -152,9 +152,9 @@ sub request_oauth2_p {
 	my $tx = $self->_build_request_oauth2(@_);
 	return $self->ua->start_p($tx)->then(sub {
 		my ($tx) = @_;
-		die twitter_tx_error($tx) . "\n" if $tx->error;
+		die twitter_tx_error($tx) if $tx->error;
 		return $self->_from_request_oauth2($tx) // die "No bearer token returned\n";
-	});
+	}, sub { die Mojo::WebService::Twitter::Error->new(connection_error => $_[0]) });
 }
 
 sub _build_request_oauth2 {
@@ -183,7 +183,7 @@ sub get_tweet {
 		});
 	} else {
 		$tx = $self->ua->start($tx);
-		die twitter_tx_error($tx) . "\n" if $tx->error;
+		die twitter_tx_error($tx) if $tx->error;
 		return _tweet_object($tx->res->json);
 	}
 }
@@ -193,9 +193,9 @@ sub get_tweet_p {
 	my $tx = $self->_build_get_tweet(@_);
 	return $self->ua->start_p($tx)->then(sub {
 		my ($tx) = @_;
-		die twitter_tx_error($tx) . "\n" if $tx->error;
+		die twitter_tx_error($tx) if $tx->error;
 		return _tweet_object($tx->res->json);
-	});
+	}, sub { die Mojo::WebService::Twitter::Error->new(connection_error => $_[0]) });
 }
 
 sub _build_get_tweet {
@@ -219,7 +219,7 @@ sub get_user {
 		});
 	} else {
 		$tx = $self->ua->start($tx);
-		die twitter_tx_error($tx) . "\n" if $tx->error;
+		die twitter_tx_error($tx) if $tx->error;
 		return _user_object($tx->res->json);
 	}
 }
@@ -229,9 +229,9 @@ sub get_user_p {
 	my $tx = $self->_build_get_user(@_);
 	return $self->ua->start_p($tx)->then(sub {
 		my ($tx) = @_;
-		die twitter_tx_error($tx) . "\n" if $tx->error;
+		die twitter_tx_error($tx) if $tx->error;
 		return _user_object($tx->res->json);
-	});
+	}, sub { die Mojo::WebService::Twitter::Error->new(connection_error => $_[0]) });
 }
 
 sub _build_get_user {
@@ -258,7 +258,7 @@ sub post_tweet {
 		});
 	} else {
 		$tx = $self->ua->start($tx);
-		die twitter_tx_error($tx) . "\n" if $tx->error;
+		die twitter_tx_error($tx) if $tx->error;
 		return _tweet_object($tx->res->json);
 	}
 }
@@ -268,9 +268,9 @@ sub post_tweet_p {
 	my $tx = $self->_build_post_tweet(@_);
 	return $self->ua->start_p($tx)->then(sub {
 		my ($tx) = @_;
-		die twitter_tx_error($tx) . "\n" if $tx->error;
+		die twitter_tx_error($tx) if $tx->error;
 		return _tweet_object($tx->res->json);
-	});
+	}, sub { die Mojo::WebService::Twitter::Error->new(connection_error => $_[0]) });
 }
 
 sub _build_post_tweet {
@@ -300,7 +300,7 @@ sub retweet {
 		});
 	} else {
 		$tx = $self->ua->start($tx);
-		die twitter_tx_error($tx) . "\n" if $tx->error;
+		die twitter_tx_error($tx) if $tx->error;
 		return _tweet_object($tx->res->json);
 	}
 }
@@ -310,9 +310,9 @@ sub retweet_p {
 	my $tx = $self->_build_retweet(@_);
 	return $self->ua->start_p($tx)->then(sub {
 		my ($tx) = @_;
-		die twitter_tx_error($tx) . "\n" if $tx->error;
+		die twitter_tx_error($tx) if $tx->error;
 		return _tweet_object($tx->res->json);
-	});
+	}, sub { die Mojo::WebService::Twitter::Error->new(connection_error => $_[0]) });
 }
 
 sub _build_retweet {
@@ -337,7 +337,7 @@ sub search_tweets {
 		});
 	} else {
 		$tx = $self->ua->start($tx);
-		die twitter_tx_error($tx) . "\n" if $tx->error;
+		die twitter_tx_error($tx) if $tx->error;
 		return Mojo::Collection->new(map { _tweet_object($_) } @{$tx->res->json->{statuses} // []});
 	}
 }
@@ -347,9 +347,9 @@ sub search_tweets_p {
 	my $tx = $self->_build_search_tweets(@_);
 	return $self->ua->start_p($tx)->then(sub {
 		my ($tx) = @_;
-		die twitter_tx_error($tx) . "\n" if $tx->error;
+		die twitter_tx_error($tx) if $tx->error;
 		return Mojo::Collection->new(map { _tweet_object($_) } @{$tx->res->json->{statuses} // []});
-	});
+	}, sub { die Mojo::WebService::Twitter::Error->new(connection_error => $_[0]) });
 }
 
 sub _build_search_tweets {
@@ -384,7 +384,7 @@ sub verify_credentials {
 		});
 	} else {
 		$tx = $self->ua->start($tx);
-		die twitter_tx_error($tx) . "\n" if $tx->error;
+		die twitter_tx_error($tx) if $tx->error;
 		return Mojo::WebService::Twitter::User->new(twitter => $self)->from_source($tx->res->json);
 	}
 }
@@ -394,9 +394,9 @@ sub verify_credentials_p {
 	my $tx = $self->_build_verify_credentials(@_);
 	return $self->ua->start_p($tx)->then(sub {
 		my ($tx) = @_;
-		die twitter_tx_error($tx) . "\n" if $tx->error;
+		die twitter_tx_error($tx) if $tx->error;
 		return Mojo::WebService::Twitter::User->new(twitter => $self)->from_source($tx->res->json);
-	});
+	}, sub { die Mojo::WebService::Twitter::Error->new(connection_error => $_[0]) });
 }
 
 sub _build_verify_credentials {
@@ -462,17 +462,17 @@ Mojo::WebService::Twitter - Simple Twitter API client
  # Non-blocking API request
  $twitter->get_tweet($tweet_id, sub {
    my ($twitter, $err, $tweet) = @_;
-   say $err ? "Error: $err" : 'Tweet: ' . $tweet->text;
+   print $err ? "Error: $err" : 'Tweet: ' . $tweet->text . "\n";
  });
  Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
  
  # Non-blocking API request using promises
  $twitter->get_tweet_p($tweet_id)->then(sub {
    my ($tweet) = @_;
-   say 'Tweet: ' . $tweet->text;
+   print 'Tweet: ' . $tweet->text . "\n";
  })->catch(sub {
    my ($err) = @_;
-   say "Error: $err";
+   print "Error: $err";
  })->wait;
  
  # Some requests require authentication on behalf of a user
