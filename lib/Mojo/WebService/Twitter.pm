@@ -501,14 +501,13 @@ L<Twitter documentation|https://dev.twitter.com/web/sign-in/implementing> for
 more details.
 
 All methods which query the Twitter API can be called with an optional trailing
-callback argument to run a non-blocking API query. On transport, HTTP, or API
-error, blocking API queries will throw a L<Mojo::WebService::Twitter::Error>
-exception, while non-blocking API queries will pass the exception object to the
-callback. Consider organizing complex sequences of non-blocking queries with
-L<Mojo::IOLoop/"delay">.
-
-Instead of a trailing callback, the C<_p> variants of each method will return a
-L<Mojo::Promise> that can be used to easily manage the non-blocking API query.
+callback argument to run a non-blocking API query. Alternatively, the C<_p>
+variant will run a non-blocking API query and return a L<Mojo::Promise>, which
+can simplify complex sequences of non-blocking queries. On connection, HTTP, or
+API error, blocking API queries will throw a L<Mojo::WebService::Twitter::Error>
+exception. Non-blocking API queries will pass this exception object to the
+callback or reject the promise, and otherwise pass the results to the callback
+or resolve the promise.
 
 Note that this distribution implements only a subset of the Twitter API.
 Additional features may be added as requested. See L<Twitter::API> for a more
