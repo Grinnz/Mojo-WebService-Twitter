@@ -18,17 +18,17 @@ Mojo::WebService::Twitter - Simple Twitter API client
  # Non-blocking API request
  $twitter->get_tweet($tweet_id, sub {
    my ($twitter, $err, $tweet) = @_;
-   say $err ? "Error: $err" : 'Tweet: ' . $tweet->text;
+   print $err ? "Error: $err" : 'Tweet: ' . $tweet->text . "\n";
  });
  Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
  
  # Non-blocking API request using promises
  $twitter->get_tweet_p($tweet_id)->then(sub {
    my ($tweet) = @_;
-   say 'Tweet: ' . $tweet->text;
+   print 'Tweet: ' . $tweet->text . "\n";
  })->catch(sub {
    my ($err) = @_;
-   say "Error: $err";
+   print "Error: $err";
  })->wait;
  
  # Some requests require authentication on behalf of a user

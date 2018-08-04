@@ -524,7 +524,7 @@
          {
             "class" : "Dist::Zilla::Plugin::InstallGuide",
             "name" : "@Author::DBOOK/InstallGuide",
-            "version" : "1.200009"
+            "version" : "1.200011"
          },
          {
             "class" : "Dist::Zilla::Plugin::Manifest",
