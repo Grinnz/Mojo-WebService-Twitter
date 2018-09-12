@@ -63,27 +63,27 @@
    "provides" : {
       "Mojo::WebService::Twitter" : {
          "file" : "lib/Mojo/WebService/Twitter.pm",
-         "version" : "1.000"
+         "version" : "1.001"
       },
       "Mojo::WebService::Twitter::Error" : {
          "file" : "lib/Mojo/WebService/Twitter/Error.pm",
-         "version" : "1.000"
+         "version" : "1.001"
       },
       "Mojo::WebService::Twitter::Media" : {
          "file" : "lib/Mojo/WebService/Twitter/Media.pm",
-         "version" : "1.000"
+         "version" : "1.001"
       },
       "Mojo::WebService::Twitter::Tweet" : {
          "file" : "lib/Mojo/WebService/Twitter/Tweet.pm",
-         "version" : "1.000"
+         "version" : "1.001"
       },
       "Mojo::WebService::Twitter::User" : {
          "file" : "lib/Mojo/WebService/Twitter/User.pm",
-         "version" : "1.000"
+         "version" : "1.001"
       },
       "Mojo::WebService::Twitter::Util" : {
          "file" : "lib/Mojo/WebService/Twitter/Util.pm",
-         "version" : "1.000"
+         "version" : "1.001"
       }
    },
    "release_status" : "stable",
@@ -99,7 +99,7 @@
       },
       "x_IRC" : "irc://irc.perl.org/#net-twitter"
    },
-   "version" : "1.000",
+   "version" : "1.001",
    "x_Dist_Zilla" : {
       "perl" : {
          "version" : "5.028000"
@@ -174,7 +174,7 @@
                }
             },
             "name" : "@Author::DBOOK/Git::Contributors",
-            "version" : "0.034"
+            "version" : "0.035"
          },
          {
             "class" : "Dist::Zilla::Plugin::MetaNoIndex",
@@ -293,7 +293,7 @@
                   "branch" : null,
                   "changelog" : "Changes",
                   "signed" : 0,
-                  "tag" : "v1.000",
+                  "tag" : "v1.001",
                   "tag_format" : "v%v",
                   "tag_message" : "v%v"
                },
@@ -614,6 +614,6 @@
       "Dan Book <grinnz@grinnz.com>"
    ],
    "x_generated_by_perl" : "v5.28.0",
-   "x_serialization_backend" : "Cpanel::JSON::XS version 4.04"
+   "x_serialization_backend" : "Cpanel::JSON::XS version 4.06"
 }
 
