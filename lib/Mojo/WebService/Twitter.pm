@@ -449,8 +449,7 @@ sub _www_form_urlencode {
 	my @terms;
 	while (@params) {
 		my ($key, $values) = splice @params, 0, 2;
-		my @values = ref $values eq 'ARRAY' ? @$values : $values;
-		foreach my $value (@values) {
+		foreach my $value (ref $values eq 'ARRAY' ? @$values : $values) {
 			push @terms, join '=', map { url_escape encode 'UTF-8', $_ } ($key // ''), ($value // '');
 		}
 	}
