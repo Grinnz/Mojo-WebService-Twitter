@@ -290,6 +290,50 @@ sub _build_post_tweet {
 	return $tx;
 }
 
+sub get_user_timeline {
+	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
+	my $self = shift;
+	my $tx = $self->_build_get_user_timeline(@_);
+	if ($cb) {
+		$self->ua->start($tx, sub {
+			my ($ua, $tx) = @_;
+			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
+			$self->$cb(undef, Mojo::Collection->new(map { _tweet_object($_) } @{$tx->res->json // []}));
+		});
+	} else {
+		$tx = $self->ua->start($tx);
+		die twitter_tx_error($tx) if $tx->error;
+		return Mojo::Collection->new(map { _tweet_object($_) } @{$tx->res->json // []});
+	}
+}
+
+sub get_user_timeline_p {
+	my $self = shift;
+	my $tx = $self->_build_get_user_timeline(@_);
+	return $self->ua->start_p($tx)->then(sub {
+		my ($tx) = @_;
+		die twitter_tx_error($tx) if $tx->error;
+		return Mojo::Collection->new(map { _tweet_object($_) } @{$tx->res->json // []});
+	}, sub { die Mojo::WebService::Twitter::Error->new(connection_error => $_[0]) });
+}
+
+sub _build_get_user_timeline {
+	my ($self, %params) = @_;
+	my %query;
+	$query{user_id} = $params{user_id} if defined $params{user_id};
+	$query{screen_name} = $params{screen_name} if defined $params{screen_name};
+	croak 'user_id or screen_name is required for get_user_timeline' unless %query;
+	$query{$_} = $params{$_} for grep { defined $params{$_} }
+		qw(since_id count max_id);
+	$query{exclude_replies} = $params{exclude_replies} ? 'true' : 'false';
+	$query{include_rts} = $params{exclude_rts} ? 'false' : 'true';
+	$query{trim_user} = 'true';
+	$query{tweet_mode} = 'extended';
+	my $tx = $self->ua->build_tx(GET => _api_url('statuses/user_timeline.json')->query(%query));
+	$self->authentication->($tx->req);
+	return $tx;
+}
+
 sub retweet {
 	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
 	my $self = shift;
@@ -653,6 +697,64 @@ Retrieve a L<Mojo::WebService::Twitter::Tweet> by tweet ID.
 
 Retrieve a L<Mojo::WebService::Twitter::User> by user ID or screen name.
 
+=head2 get_user_timeline
+
+=head2 get_user_timeline_p
+
+ my $tweets = $twitter->get_user_timeline(user_id => $user_id);
+ my $tweets = $twitter->get_user_timeline(screen_name => $screen_name);
+ my $tweets = $twitter->get_user_timeline(user_id => $user_id, %options);
+ $twitter->get_user_timeline(screen_name => $screen_name, %options, sub {
+   my ($twitter, $err, $tweets) = @_;
+ });
+ my $p = $twitter->get_user_timeline_p(screen_name => $screen_name, %options);
+
+Retrieve a L<Mojo::Collection> of L<Mojo::WebService::Twitter::Tweet> objects
+for a user's timeline by user ID or screen name. Accepts the following options:
+
+=over
+
+=item count
+
+ count => 5
+
+Limit of tweets to try and retrieve per page, actual returned count may be
+smaller due to filtering of content that is no longer available, RTs if the
+L</"include_rts"> option is disabled, or replies if the L</"exclude_replies">
+option is enabled. Maximum C<200>.
+
+=item since_id
+
+ since_id => '12345'
+
+Restricts results to those more recent than the given tweet ID. IDs should be
+specified as a string to avoid issues with large integers. See
+L<here|https://developer.twitter.com/en/docs/twitter-api/v1/tweets/timelines/guides/working-with-timelines>
+for more information on filtering results with C<since_id> and C<max_id>.
+
+=item max_id
+
+ max_id => '54321'
+
+Restricts results to those older than (or equal to) the given tweet ID. IDs
+should be specified as a string to avoid issues with large integers. See
+L<here|https://developer.twitter.com/en/docs/twitter-api/v1/tweets/timelines/guides/working-with-timelines>
+for more information on filtering results with C<since_id> and C<max_id>.
+
+=item exclude_replies
+
+ exclude_replies => 1
+
+If true, replies will be filtered from the results.
+
+=item exclude_rts
+
+ exclude_rts => 1
+
+If true, RTs will be filtered from the results.
+
+=back
+
 =head2 post_tweet
 
 =head2 post_tweet_p
@@ -784,8 +886,8 @@ C<YYYY-MM-DD>.
 
 Restricts results to those more recent than the given tweet ID. IDs should be
 specified as a string to avoid issues with large integers. See
-L<here|https://dev.twitter.com/rest/public/timelines> for more information on
-filtering results with C<since_id> and C<max_id>.
+L<here|https://developer.twitter.com/en/docs/twitter-api/v1/tweets/timelines/guides/working-with-timelines>
+for more information on filtering results with C<since_id> and C<max_id>.
 
 =item max_id
 
@@ -793,8 +895,8 @@ filtering results with C<since_id> and C<max_id>.
 
 Restricts results to those older than (or equal to) the given tweet ID. IDs
 should be specified as a string to avoid issues with large integers. See
-L<here|https://dev.twitter.com/rest/public/timelines> for more information on
-filtering results with C<since_id> and C<max_id>.
+L<here|https://developer.twitter.com/en/docs/twitter-api/v1/tweets/timelines/guides/working-with-timelines>
+for more information on filtering results with C<since_id> and C<max_id>.
 
 =back
 
