@@ -199,6 +199,8 @@ Retrieve a L<Mojo::WebService::Twitter::User> by user ID or screen name.
 
 =head2 get_user_timeline_p
 
+I<Available from version 1.002.>
+
  my $tweets = $twitter->get_user_timeline(user_id => $user_id);
  my $tweets = $twitter->get_user_timeline(screen_name => $screen_name);
  my $tweets = $twitter->get_user_timeline(user_id => $user_id, %options);
