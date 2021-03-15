@@ -247,49 +247,6 @@ sub _build_get_user {
 	return $tx;
 }
 
-sub post_tweet {
-	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
-	my $self = shift;
-	my $tx = $self->_build_post_tweet(@_);
-	if ($cb) {
-		$self->ua->start($tx, sub {
-			my ($ua, $tx) = @_;
-			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
-			$self->$cb(undef, _tweet_object($tx->res->json));
-		});
-	} else {
-		$tx = $self->ua->start($tx);
-		die twitter_tx_error($tx) if $tx->error;
-		return _tweet_object($tx->res->json);
-	}
-}
-
-sub post_tweet_p {
-	my $self = shift;
-	my $tx = $self->_build_post_tweet(@_);
-	return $self->ua->start_p($tx)->then(sub {
-		my ($tx) = @_;
-		die twitter_tx_error($tx) if $tx->error;
-		return _tweet_object($tx->res->json);
-	}, sub { die Mojo::WebService::Twitter::Error->new(connection_error => $_[0]) });
-}
-
-sub _build_post_tweet {
-	my ($self, $status, %params) = @_;
-	croak 'Status text is required to post a tweet' unless defined $status;
-	my %form;
-	$form{status} = $status;
-	$form{$_} = $params{$_} for grep { defined $params{$_} }
-		qw(in_reply_to_status_id lat long place_id);
-	$form{$_} = $params{$_} ? 'true' : 'false' for grep { defined $params{$_} }
-		qw(display_coordinates);
-	$form{tweet_mode} = 'extended';
-	my $tx = $self->ua->build_tx(POST => _api_url('statuses/update.json'),
-		{'Content-Type' => 'application/x-www-form-urlencoded'}, _www_form_urlencode(%form));
-	$self->authentication->($tx->req);
-	return $tx;
-}
-
 sub get_user_timeline {
 	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
 	my $self = shift;
@@ -330,6 +287,49 @@ sub _build_get_user_timeline {
 	$query{trim_user} = 'true';
 	$query{tweet_mode} = 'extended';
 	my $tx = $self->ua->build_tx(GET => _api_url('statuses/user_timeline.json')->query(%query));
+	$self->authentication->($tx->req);
+	return $tx;
+}
+
+sub post_tweet {
+	my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
+	my $self = shift;
+	my $tx = $self->_build_post_tweet(@_);
+	if ($cb) {
+		$self->ua->start($tx, sub {
+			my ($ua, $tx) = @_;
+			return $self->$cb(twitter_tx_error($tx)) if $tx->error;
+			$self->$cb(undef, _tweet_object($tx->res->json));
+		});
+	} else {
+		$tx = $self->ua->start($tx);
+		die twitter_tx_error($tx) if $tx->error;
+		return _tweet_object($tx->res->json);
+	}
+}
+
+sub post_tweet_p {
+	my $self = shift;
+	my $tx = $self->_build_post_tweet(@_);
+	return $self->ua->start_p($tx)->then(sub {
+		my ($tx) = @_;
+		die twitter_tx_error($tx) if $tx->error;
+		return _tweet_object($tx->res->json);
+	}, sub { die Mojo::WebService::Twitter::Error->new(connection_error => $_[0]) });
+}
+
+sub _build_post_tweet {
+	my ($self, $status, %params) = @_;
+	croak 'Status text is required to post a tweet' unless defined $status;
+	my %form;
+	$form{status} = $status;
+	$form{$_} = $params{$_} for grep { defined $params{$_} }
+		qw(in_reply_to_status_id lat long place_id);
+	$form{$_} = $params{$_} ? 'true' : 'false' for grep { defined $params{$_} }
+		qw(display_coordinates);
+	$form{tweet_mode} = 'extended';
+	my $tx = $self->ua->build_tx(POST => _api_url('statuses/update.json'),
+		{'Content-Type' => 'application/x-www-form-urlencoded'}, _www_form_urlencode(%form));
 	$self->authentication->($tx->req);
 	return $tx;
 }
@@ -710,7 +710,11 @@ Retrieve a L<Mojo::WebService::Twitter::User> by user ID or screen name.
  my $p = $twitter->get_user_timeline_p(screen_name => $screen_name, %options);
 
 Retrieve a L<Mojo::Collection> of L<Mojo::WebService::Twitter::Tweet> objects
-for a user's timeline by user ID or screen name. Accepts the following options:
+for a user's timeline by user ID or screen name. Note that the embedded user
+objects will only contain an C<id> to avoid excess duplication of the same
+user's information; use L</"get_user"> to retrieve the user's information.
+
+Accepts the following options:
 
 =over
 
@@ -721,7 +725,7 @@ for a user's timeline by user ID or screen name. Accepts the following options:
 Limit of tweets to try and retrieve per page, actual returned count may be
 smaller due to filtering of content that is no longer available, RTs if the
 L</"include_rts"> option is disabled, or replies if the L</"exclude_replies">
-option is enabled. Maximum C<200>.
+option is enabled. Maximum C<200>, default C<20>.
 
 =item since_id
 
@@ -839,7 +843,9 @@ OAuth 1.0 authentication.
  my $p = $twitter->search_tweets_p($query, %options);
 
 Search Twitter and return a L<Mojo::Collection> of L<Mojo::WebService::Twitter::Tweet>
-objects. Accepts the following options:
+objects.
+
+Accepts the following options:
 
 =over
 
