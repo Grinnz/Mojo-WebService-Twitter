@@ -224,7 +224,7 @@ Accepts the following options:
 
 Limit of tweets to try and retrieve per page, actual returned count may be
 smaller due to filtering of content that is no longer available, RTs if the
-L</"include_rts"> option is disabled, or replies if the L</"exclude_replies">
+L</"exclude_rts"> option is enabled, or replies if the L</"exclude_replies">
 option is enabled. Maximum C<200>, default C<20>.
 
 =item since_id
