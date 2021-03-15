@@ -280,8 +280,7 @@ sub _build_get_user_timeline {
 	$query{user_id} = $params{user_id} if defined $params{user_id};
 	$query{screen_name} = $params{screen_name} if defined $params{screen_name};
 	croak 'user_id or screen_name is required for get_user_timeline' unless %query;
-	$query{$_} = $params{$_} for grep { defined $params{$_} }
-		qw(since_id count max_id);
+	$query{$_} = $params{$_} for grep { defined $params{$_} } qw(count since_id max_id);
 	$query{exclude_replies} = $params{exclude_replies} ? 'true' : 'false';
 	$query{include_rts} = $params{exclude_rts} ? 'false' : 'true';
 	$query{trim_user} = 'true';
@@ -724,7 +723,7 @@ Accepts the following options:
 
  count => 5
 
-Limit of tweets to try and retrieve per page, actual returned count may be
+Limit of tweets to try and retrieve per page. Actual returned count may be
 smaller due to filtering of content that is no longer available, RTs if the
 L</"exclude_rts"> option is enabled, or replies if the L</"exclude_replies">
 option is enabled. Maximum C<200>, default C<20>.

@@ -222,7 +222,7 @@ Accepts the following options:
 
  count => 5
 
-Limit of tweets to try and retrieve per page, actual returned count may be
+Limit of tweets to try and retrieve per page. Actual returned count may be
 smaller due to filtering of content that is no longer available, RTs if the
 L</"exclude_rts"> option is enabled, or replies if the L</"exclude_replies">
 option is enabled. Maximum C<200>, default C<20>.
