@@ -6,7 +6,7 @@ use Exporter 'import';
 use Mojo::URL;
 use Time::Piece ();
 
-our $VERSION = '1.003';
+our $VERSION = '1.004';
 
 our @EXPORT_OK = qw(parse_twitter_timestamp twitter_authorize_url);
 
