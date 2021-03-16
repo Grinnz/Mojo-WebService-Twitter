@@ -285,7 +285,7 @@ sub _build_get_user_timeline {
 	$query{include_rts} = $params{exclude_rts} ? 'false' : 'true';
 	$query{trim_user} = 'true';
 	$query{tweet_mode} = 'extended';
-	my $tx = $self->ua->build_tx(GET => _api_url('statuses/user_timeline.json')->query(%query));
+	my $tx = $self->ua->build_tx(GET => _api_url('statuses/user_timeline.json')->query(_www_form_urlencode(%query)));
 	$self->authentication->($tx->req);
 	return $tx;
 }
