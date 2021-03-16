@@ -84,7 +84,7 @@ EOW
         "Dan Book <dbook\@cpan.org>"
       ],
       "dist_name" => "Mojo-WebService-Twitter",
-      "dist_version" => "1.002",
+      "dist_version" => "1.003",
       "license" => "artistic_2",
       "module_name" => "Mojo::WebService::Twitter",
       "recursive_test_files" => 1,
